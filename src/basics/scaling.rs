@@ -98,6 +98,11 @@ impl Mul<TimeValue> for i64 {
     #[inline] fn mul(self, t: TimeValue) -> Self::Output { t * self }
 }
 
+impl Mul<TimeValue> for usize {
+    type Output = TimeValue;
+    #[inline] fn mul(self, t: TimeValue) -> Self::Output { t * self }
+}
+
 impl Mul<TimeValue> for f64 {
     type Output = TimeValue;
     #[inline] fn mul(self, t: TimeValue) -> Self::Output { t * self }
