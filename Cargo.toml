@@ -1,0 +1,17 @@
+[package]
+name = "chronologic"
+version = "0.1.0"
+edition = "2021"
+authors = ["Xophe <christophe.dousson@me.com>"]
+license = "MIT"
+description = "Utilities for time reasoning"
+repository = "https://github.com/XopheD/chronologic"
+keywords = ["time","constraint","reasoning"]
+categories = ["data-structures","algorithms"]
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+[dependencies]
+chrono = "0.4.19"
