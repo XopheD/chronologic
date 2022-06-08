@@ -63,4 +63,15 @@ mod tests {
 
         // dbg!((a|b) + c);
     }
+
+    #[test]
+    fn translation()
+    {
+        let t1 = TimeValue::from_ticks(1);
+        let t5 = TimeValue::from_ticks(5);
+        let tw : TimeInterval = (t1..t5).try_into().unwrap();
+
+        let now = Timestamp::now();
+        assert_eq!( tw + now, now + tw);
+    }
 }

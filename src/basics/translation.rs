@@ -127,11 +127,11 @@ impl<T> SubAssign<TimeValue> for TimeRange<T>
     }
 }
 
-impl<TW> Add<TW> for TimeValue
-    where TW: Into<TimeInterval>
+impl<T> Add<TimeRange<T>> for TimeValue
+    where T:TimePoint+Add<TimeValue,Output=T>
 {
-    type Output = TimeInterval;
-    #[inline] fn add(self, other: TW) -> Self::Output { other.into() + self}
+    type Output = TimeRange<T>;
+    #[inline] fn add(self, other: TimeRange<T>) -> Self::Output { other + self }
 }
 
 impl<T> Sub<TimeRange<T>> for TimeValue
@@ -140,7 +140,6 @@ impl<T> Sub<TimeRange<T>> for TimeValue
     type Output = TimeRange<T>;
     #[inline] fn sub(self, other: TimeRange<T>) -> Self::Output { (-other) + self }
 }
-
 
 impl<T> Add<TimeInterval> for TimeRange<T>
     where T:TimePoint+Add<TimeValue,Output=T>
@@ -196,6 +195,19 @@ impl Sub<TimeInterval> for Timestamp {
     fn sub(self, other: TimeInterval) -> Self::Output {
         TimeSlot::new(self - other.upper, self - other.lower).unwrap()
     }
+}
+
+
+impl Add<Timestamp> for TimeInterval {
+    type Output = TimeSlot;
+    #[inline]
+    fn add(self, other: Timestamp) -> Self::Output { other + self }
+}
+
+impl Sub<Timestamp> for TimeInterval {
+    type Output = TimeSlot;
+    #[inline]
+    fn sub(self, other: Timestamp) -> Self::Output { (-other) + self }
 }
 
 impl Sub for TimeSlot {
@@ -276,6 +288,47 @@ impl<T:TimePoint> SubAssign<TimeValue> for TimeSet<T>
         // adding a constant preserves the structure (order and distance
         // between successive intervals -> no new overlapping to manage)
         self.0.iter_mut().for_each(|tw| *tw -= t)
+    }
+}
+
+impl Add<Timestamp> for TimeWindow
+{
+    type Output = TimeSlots;
+    #[inline]
+    fn add(self, other: Timestamp) -> Self::Output {
+        self.iter()
+            .map(|i| *i + other)
+            .collect()
+    }
+}
+
+impl Sub<Timestamp> for TimeWindow
+{
+    type Output = TimeSlots;
+    #[inline]
+    fn sub(self, other: Timestamp) -> Self::Output {
+        self.iter()
+            .map(|i| *i - other)
+            .collect()
+    }
+}
+
+
+impl Add<TimeWindow> for Timestamp
+{
+    type Output = TimeSlots;
+    #[inline]
+    fn add(self, other: TimeWindow) -> Self::Output { other + self }
+}
+
+impl Sub<TimeWindow> for Timestamp
+{
+    type Output = TimeSlots;
+    #[inline]
+    fn sub(self, other: TimeWindow) -> Self::Output {
+        other.iter()
+            .map(|i| self - *i)
+            .collect()
     }
 }
 
