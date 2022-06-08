@@ -7,7 +7,7 @@ use chrono::Duration;
 
 use super::*;
 
-/// # A single time value
+/// # A single time value (duration)
 ///
 /// This time value represent a duration and could be infinite.
 #[derive(Copy, Clone, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]

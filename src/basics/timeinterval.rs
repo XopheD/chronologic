@@ -1,8 +1,7 @@
-use std::error::Error;
 use std::fmt;
-use std::fmt::{Display, Formatter};
 use std::iter::{Once, once};
 use std::ops::{Add, Neg, Sub};
+use crate::error::TimeError;
 use super::*;
 
 /// # A non-empty range of time values
@@ -17,26 +16,6 @@ pub type TimeSlot = TimeRange<Timestamp>;
 /// # A generic non emptyinterval between two time points
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub struct TimeRange<T:TimePoint> { pub(crate) lower:T, pub(crate) upper:T }
-
-/// Time structures generation error
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum TimeError {
-    EmptyInterval,
-    FutureOverflow,
-    PastOverflow
-}
-
-impl Error for TimeError { }
-
-impl Display for TimeError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.write_str(match self {
-            TimeError::EmptyInterval => "empty time interval",
-            TimeError::FutureOverflow => "overflow in future (+oo)",
-            TimeError::PastOverflow => "overflow in past (-oo)",
-        })
-    }
-}
 
 impl<T:TimePoint> TimeRange<T>
 {

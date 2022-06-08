@@ -1,5 +1,6 @@
 use std::ops::{RangeTo, Add, Sub, AddAssign, SubAssign};
 use crate::*;
+use crate::error::TimeError;
 
 
 impl<T:TimePoint> TimeSpan for RangeTo<T>

@@ -66,6 +66,7 @@ pub trait TimeSpan {
     ///
     /// It panics if this time window is empty
     fn upper_bound(&self) -> Self::TimePoint;
+
 }
 
 

@@ -6,7 +6,6 @@ mod timewin;
 mod translation;
 mod scaling;
 mod setops;
-mod range;
 
 pub use timespan::*;
 pub use timevalue::*;
@@ -34,7 +33,10 @@ mod tests {
     use std::fmt::Debug;
     use crate::*;
 
-    fn dbgstr<X:Debug>(x: &X) -> String { format!("{:?}", x) }
+    fn checktw<T:Debug>(check:&str, x:&T) {
+        assert_eq!( check, &format!("{:?}", x));
+    }
+
 
     #[test]
     fn intersection()
@@ -47,7 +49,7 @@ mod tests {
 
         let intersection = !t1 & !t5 & !t10bis;
         dbg!(!intersection.clone());
-        assert_eq!( "]-oo,0]U[2,4]U[16,+oo[", &dbgstr(&intersection));
+        checktw( "]-oo,0]U[2,4]U[16,+oo[", &intersection);
     }
 
     #[test]
@@ -57,9 +59,8 @@ mod tests {
         let b: TimeRange<_>  = (TimeValue::from_ticks(15)..=TimeValue::from_ticks(18)).try_into().unwrap();
         let c: TimeRange<_> = (TimeValue::from_ticks(8)..=TimeValue::from_ticks(14)).try_into().unwrap();
 
-        assert_eq!( "[1,18]", &dbgstr(&(a|b|c)));
+        checktw( "[1,18]", &(a|b|c));
 
         // dbg!((a|b) + c);
     }
 }
-
