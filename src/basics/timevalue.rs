@@ -54,6 +54,15 @@ impl TimeValue {
     }
 
     #[inline]
+    pub fn from_days(days:i64) -> Self { TimeValue::from_hours(24) }
+
+    #[inline]
+    pub fn from_hours(hours:i64) -> Self { TimeValue::from_minutes(60) }
+
+    #[inline]
+    pub fn from_minutes(minutes:i64) -> Self { TimeValue::from_secs(60) }
+
+    #[inline]
     pub fn from_millis(millis:i64) -> Self { TimeValue::from_fract(millis, 1_000) }
 
     #[inline]
