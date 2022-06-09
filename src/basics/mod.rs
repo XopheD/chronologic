@@ -1,16 +1,16 @@
-mod timespan;
+mod timewin;
 mod timevalue;
 mod timeinterval;
-mod timewin;
+mod timeset;
 
 mod translation;
 mod scaling;
 mod setops;
 
-pub use timespan::*;
+pub use timewin::*;
 pub use timevalue::*;
 pub use timeinterval::*;
-pub use timewin::*;
+pub use timeset::*;
 
 
 const INFINITE_TIME_VALUE : i64 = i64::MAX;
@@ -45,7 +45,7 @@ mod tests {
         let t5 = TimeValue::from_ticks(5);
         let t10 = TimeValue::from_ticks(10);
 
-        let t10bis = TimeInterval::centered(t10, t5).unwrap();
+        let t10bis = TimeSpan::centered(t10, t5).unwrap();
 
         let intersection = !t1 & !t5 & !t10bis;
         dbg!(!intersection.clone());
@@ -55,9 +55,9 @@ mod tests {
     #[test]
     fn union()
     {
-        let a : TimeRange<_> = (TimeValue::from_ticks(1)..=TimeValue::from_ticks(10)).try_into().unwrap();
-        let b: TimeRange<_>  = (TimeValue::from_ticks(15)..=TimeValue::from_ticks(18)).try_into().unwrap();
-        let c: TimeRange<_> = (TimeValue::from_ticks(8)..=TimeValue::from_ticks(14)).try_into().unwrap();
+        let a : TimeInterval<_> = (TimeValue::from_ticks(1)..=TimeValue::from_ticks(10)).try_into().unwrap();
+        let b: TimeInterval<_>  = (TimeValue::from_ticks(15)..=TimeValue::from_ticks(18)).try_into().unwrap();
+        let c: TimeInterval<_> = (TimeValue::from_ticks(8)..=TimeValue::from_ticks(14)).try_into().unwrap();
 
         checktw( "[1,18]", &(a|b|c));
 
@@ -69,7 +69,7 @@ mod tests {
     {
         let t1 = TimeValue::from_ticks(1);
         let t5 = TimeValue::from_ticks(5);
-        let tw : TimeInterval = (t1..t5).try_into().unwrap();
+        let tw : TimeSpan = (t1..t5).try_into().unwrap();
 
         let now = Timestamp::now();
         assert_eq!( tw + now, now + tw);

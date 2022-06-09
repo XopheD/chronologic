@@ -332,7 +332,7 @@ impl TimePoint for Timestamp
     #[inline] fn just_before(&self) -> Self { Self(self.0.just_before()) }
 }
 
-impl<T:TimePoint> TimeSpan for T
+impl<T:TimePoint> TimeWindow for T
 {
     type TimePoint = Self;
     #[inline]
@@ -351,13 +351,6 @@ impl<T:TimePoint> TimeSpan for T
     fn lower_bound(&self) -> Self::TimePoint { *self }
     #[inline]
     fn upper_bound(&self) -> Self::TimePoint { *self }
-}
-
-impl<T:TimePoint> TimeConvex for T {
-    #[inline]
-    fn to_timerange(&self) -> TimeRange<Self::TimePoint> {
-        TimeRange::singleton(*self).unwrap()
-    }
 }
 
 impl Into<NaiveDateTime> for Timestamp

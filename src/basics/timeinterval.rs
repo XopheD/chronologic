@@ -8,16 +8,16 @@ use super::*;
 ///
 /// As time values are discrete, we always have
 /// ]a,b[ = [a+1,b-1]
-pub type TimeInterval = TimeRange<TimeValue>;
+pub type TimeSpan = TimeInterval<TimeValue>;
 
 /// # A non-empty range of timestamps
-pub type TimeSlot = TimeRange<Timestamp>;
+pub type TimeSlot = TimeInterval<Timestamp>;
 
 /// # A generic non emptyinterval between two time points
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
-pub struct TimeRange<T:TimePoint> { pub(crate) lower:T, pub(crate) upper:T }
+pub struct TimeInterval<T:TimePoint> { pub(crate) lower:T, pub(crate) upper:T }
 
-impl<T:TimePoint> TimeRange<T>
+impl<T:TimePoint> TimeInterval<T>
 {
     #[inline]
     pub fn new(lower: T, upper: T) -> Result<Self, TimeError> {
@@ -82,18 +82,9 @@ impl<T:TimePoint> TimeRange<T>
         let upper = upper.min(self.upper);
         if self.lower > upper { None } else { Some(Self { lower: self.lower, upper }) }
     }
-
-    #[inline]
-    pub fn intersection<TW>(&self, convex: TW) -> Option<Self>
-        where TW: TimeConvex + TimeSpan<TimePoint=T>
-    {
-        let upper = convex.upper_bound().min(self.upper);
-        let lower = convex.lower_bound().max(self.lower);
-        if lower > upper { None } else { Some(Self { lower, upper }) }
-    }
 }
 
-impl<T:TimePoint> TimeRange<T>
+impl<T:TimePoint> TimeInterval<T>
     where T: Add<TimeValue,Output=T> + Sub<TimeValue,Output=T>
 {
     #[inline]
@@ -116,19 +107,22 @@ impl<T:TimePoint> TimeRange<T>
 
 }
 
-impl<T:TimePoint> TimeConvex for TimeRange<T> {
+impl<T:TimePoint> TimeConvex for TimeInterval<T> {}
+
+impl<T:TimePoint> From<T> for TimeInterval<T> {
     #[inline]
-    fn to_timerange(&self) -> TimeRange<Self::TimePoint> { *self }
+    fn from(t: T) -> Self { TimeInterval::singleton(t).unwrap() }
 }
 
-impl<T:TimePoint> IntoIterator for TimeRange<T>
+
+impl<T:TimePoint> IntoIterator for TimeInterval<T>
 {
-    type Item = TimeRange<T>;
-    type IntoIter = Once<TimeRange<T>>;
+    type Item = TimeInterval<T>;
+    type IntoIter = Once<TimeInterval<T>>;
     #[inline] fn into_iter(self) -> Self::IntoIter { once(self) }
 }
 
-impl<T:TimePoint> TimeSpan for TimeRange<T>
+impl<T:TimePoint> TimeWindow for TimeInterval<T>
 {
     type TimePoint = T;
 
@@ -145,7 +139,7 @@ impl<T:TimePoint> TimeSpan for TimeRange<T>
 }
 
 
-impl<T:TimePoint+fmt::Debug> fmt::Debug for TimeRange<T>
+impl<T:TimePoint+fmt::Debug> fmt::Debug for TimeInterval<T>
 {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
     {
@@ -170,7 +164,7 @@ impl<T:TimePoint+fmt::Debug> fmt::Debug for TimeRange<T>
 }
 
 
-impl<T:TimePoint+fmt::Display> fmt::Display for TimeRange<T>
+impl<T:TimePoint+fmt::Display> fmt::Display for TimeInterval<T>
 {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
     {
@@ -194,7 +188,7 @@ impl<T:TimePoint+fmt::Display> fmt::Display for TimeRange<T>
     }
 }
 
-impl<T:TimePoint> Neg for TimeRange<T>
+impl<T:TimePoint> Neg for TimeInterval<T>
 {
     type Output = Self;
     #[inline] fn neg(self) -> Self::Output {

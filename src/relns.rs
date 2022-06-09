@@ -1,7 +1,7 @@
 //! # Time relations
 use super::*;
 
-pub trait TimeRelation: TimeSpan {
+pub trait TimeRelation: TimeWindow {
 
     /// Checks if a timepoint is inside this time window
     fn contains<I>(&self, item: &I) -> bool
@@ -45,7 +45,7 @@ mod tests {
         let t1 = TimeValue::from_ticks(1);
         let t5 = TimeValue::from_ticks(5);
         let t10 = TimeValue::from_ticks(10);
-        let tw10 = TimeInterval::centered(t10, t5).unwrap();
+        let tw10 = TimeSpan::centered(t10, t5).unwrap();
         let tw = !t1 & !t5 & !tw10;
         checktw( "]-oo,0]U[2,4]U[16,+oo[", &tw);
 

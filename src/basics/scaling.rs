@@ -111,8 +111,8 @@ impl Mul<TimeValue> for f64 {
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 
-impl Mul<i64> for TimeInterval {
-    type Output = TimeInterval;
+impl Mul<i64> for TimeSpan {
+    type Output = TimeSpan;
 
     #[inline]
     fn mul(self, n: i64) -> Self::Output {
@@ -124,12 +124,12 @@ impl Mul<i64> for TimeInterval {
         };
         assert! (!lower.is_future_infinite(), "future overflow");
         assert! (!upper.is_past_infinite(), "past overflow");
-        TimeInterval { lower, upper }
+        TimeSpan { lower, upper }
     }
 }
 
-impl Div<i64> for TimeInterval {
-    type Output = TimeInterval;
+impl Div<i64> for TimeSpan {
+    type Output = TimeSpan;
 
     #[inline]
     fn div(self, n: i64) -> Self::Output {
@@ -139,13 +139,13 @@ impl Div<i64> for TimeInterval {
         } else {
             (self.lower / n, self.upper / n)
         };
-        TimeInterval { lower, upper }
+        TimeSpan { lower, upper }
     }
 }
 
 
-impl Mul<usize> for TimeInterval {
-    type Output = TimeInterval;
+impl Mul<usize> for TimeSpan {
+    type Output = TimeSpan;
 
     #[inline]
     fn mul(self, n: usize) -> Self::Output {
@@ -153,21 +153,21 @@ impl Mul<usize> for TimeInterval {
         let upper = self.upper * n;
         assert! (!lower.is_future_infinite(), "future overflow");
         assert! (!upper.is_past_infinite(), "past overflow");
-        TimeInterval { lower, upper }
+        TimeSpan { lower, upper }
     }
 }
 
-impl Div<usize> for TimeInterval {
-    type Output = TimeInterval;
+impl Div<usize> for TimeSpan {
+    type Output = TimeSpan;
 
     #[inline]
     fn div(self, n: usize) -> Self::Output {
-        TimeInterval { lower: self.lower/n, upper: self.upper/n }
+        TimeSpan { lower: self.lower/n, upper: self.upper/n }
     }
 }
 
-impl Mul<f64> for TimeInterval {
-    type Output = TimeInterval;
+impl Mul<f64> for TimeSpan {
+    type Output = TimeSpan;
 
     #[inline]
     fn mul(self, n: f64) -> Self::Output {
@@ -179,12 +179,12 @@ impl Mul<f64> for TimeInterval {
         };
         assert! (!lower.is_future_infinite(), "future overflow");
         assert! (!upper.is_past_infinite(), "past overflow");
-        TimeInterval { lower, upper }
+        TimeSpan { lower, upper }
     }
 }
 
-impl Div<f64> for TimeInterval {
-    type Output = TimeInterval;
+impl Div<f64> for TimeSpan {
+    type Output = TimeSpan;
 
     #[inline]
     fn div(self, n: f64) -> Self::Output {
@@ -196,47 +196,47 @@ impl Div<f64> for TimeInterval {
         };
         assert! (!lower.is_future_infinite(), "future overflow");
         assert! (!upper.is_past_infinite(), "past overflow");
-        TimeInterval { lower, upper }
+        TimeSpan { lower, upper }
     }
 }
 
-impl MulAssign<i64> for TimeInterval {
+impl MulAssign<i64> for TimeSpan {
     #[inline] fn mul_assign(&mut self, n: i64) { *self = *self * n }
 }
 
-impl DivAssign<i64> for TimeInterval {
+impl DivAssign<i64> for TimeSpan {
     #[inline] fn div_assign(&mut self, n: i64) { *self = *self / n }
 }
 
-impl MulAssign<usize> for TimeInterval {
+impl MulAssign<usize> for TimeSpan {
     #[inline] fn mul_assign(&mut self, n: usize) { *self = *self * n }
 }
 
-impl DivAssign<usize> for TimeInterval {
+impl DivAssign<usize> for TimeSpan {
     #[inline] fn div_assign(&mut self, n: usize) { *self = *self / n }
 }
 
-impl MulAssign<f64> for TimeInterval {
+impl MulAssign<f64> for TimeSpan {
     #[inline] fn mul_assign(&mut self, n: f64) { *self = *self * n }
 }
 
-impl DivAssign<f64> for TimeInterval {
+impl DivAssign<f64> for TimeSpan {
     #[inline] fn div_assign(&mut self, n: f64) { *self = *self / n }
 }
 
-impl Mul<TimeInterval> for i64 {
-    type Output = TimeInterval;
-    #[inline] fn mul(self, t: TimeInterval) -> Self::Output { t * self }
+impl Mul<TimeSpan> for i64 {
+    type Output = TimeSpan;
+    #[inline] fn mul(self, t: TimeSpan) -> Self::Output { t * self }
 }
 
-impl Mul<TimeInterval> for f64 {
-    type Output = TimeInterval;
-    #[inline] fn mul(self, t: TimeInterval) -> Self::Output { t * self }
+impl Mul<TimeSpan> for f64 {
+    type Output = TimeSpan;
+    #[inline] fn mul(self, t: TimeSpan) -> Self::Output { t * self }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
 
-fn check_joined_inners(inners: &mut Vec<TimeInterval>)
+fn check_joined_inners(inners: &mut Vec<TimeSpan>)
 {
     let mut i = 1;
     while i < inners.len() {
@@ -251,17 +251,17 @@ fn check_joined_inners(inners: &mut Vec<TimeInterval>)
     }
 }
 
-impl Mul<i64> for TimeWindow
+impl Mul<i64> for TimeSpans
 {
-    type Output = TimeWindow;
+    type Output = TimeSpans;
     #[inline]
     fn mul(self, factor: i64) -> Self::Output
     {
         if factor == 0 {
             if self.is_empty() {
-                TimeWindow::empty()
+                TimeSpans::empty()
             } else {
-                TimeWindow::singleton(TimeValue::default())
+                TimeSpans::singleton(TimeValue::default()).unwrap()
             }
         } else {
             // since factor is non null integer, the scale increases distances between
@@ -276,9 +276,9 @@ impl Mul<i64> for TimeWindow
     }
 }
 
-impl Div<i64> for TimeWindow
+impl Div<i64> for TimeSpans
 {
-    type Output = TimeWindow;
+    type Output = TimeSpans;
     #[inline]
     fn div(self, factor: i64) -> Self::Output {
         let mut copy = self.clone();
@@ -286,17 +286,17 @@ impl Div<i64> for TimeWindow
     }
 }
 
-impl Mul<usize> for TimeWindow
+impl Mul<usize> for TimeSpans
 {
-    type Output = TimeWindow;
+    type Output = TimeSpans;
     #[inline]
     fn mul(self, factor: usize) -> Self::Output
     {
         if factor == 0 {
             if self.is_empty() {
-                TimeWindow::empty()
+                TimeSpans::empty()
             } else {
-                TimeWindow::singleton(TimeValue::default())
+                TimeSpans::singleton(TimeValue::default()).unwrap()
             }
         } else {
             // since factor is non null integer, the scale increases distances between
@@ -311,9 +311,9 @@ impl Mul<usize> for TimeWindow
     }
 }
 
-impl Div<usize> for TimeWindow
+impl Div<usize> for TimeSpans
 {
-    type Output = TimeWindow;
+    type Output = TimeSpans;
     #[inline]
     fn div(self, factor: usize) -> Self::Output {
         let mut copy = self.clone();
@@ -321,9 +321,9 @@ impl Div<usize> for TimeWindow
     }
 }
 
-impl Mul<f64> for TimeWindow
+impl Mul<f64> for TimeSpans
 {
-    type Output = TimeWindow;
+    type Output = TimeSpans;
     #[inline]
     fn mul(self, factor: f64) -> Self::Output {
         let mut inners = self.0.iter()
@@ -335,9 +335,9 @@ impl Mul<f64> for TimeWindow
     }
 }
 
-impl Div<f64> for TimeWindow
+impl Div<f64> for TimeSpans
 {
-    type Output = TimeWindow;
+    type Output = TimeSpans;
     #[inline]
     fn div(self, factor: f64) -> Self::Output {
         let mut copy = self.clone();
@@ -345,14 +345,14 @@ impl Div<f64> for TimeWindow
     }
 }
 
-impl MulAssign<i64> for TimeWindow
+impl MulAssign<i64> for TimeSpans
 {
     fn mul_assign(&mut self, factor: i64)
     {
         if factor == 0 {
             if !self.is_empty() {
                 self.0.clear();
-                self.0.push(TimeInterval {
+                self.0.push(TimeSpan {
                     lower: TimeValue::default(), // 0
                     upper: TimeValue::default()  // 0
                 });
@@ -366,7 +366,7 @@ impl MulAssign<i64> for TimeWindow
     }
 }
 
-impl DivAssign<i64> for TimeWindow
+impl DivAssign<i64> for TimeSpans
 {
     fn div_assign(&mut self, factor: i64)
     {
@@ -378,14 +378,14 @@ impl DivAssign<i64> for TimeWindow
 }
 
 
-impl MulAssign<usize> for TimeWindow
+impl MulAssign<usize> for TimeSpans
 {
     fn mul_assign(&mut self, factor: usize)
     {
         if factor == 0 {
             if !self.is_empty() {
                 self.0.clear();
-                self.0.push(TimeInterval {
+                self.0.push(TimeSpan {
                     lower: TimeValue::default(), // 0
                     upper: TimeValue::default()  // 0
                 });
@@ -399,7 +399,7 @@ impl MulAssign<usize> for TimeWindow
     }
 }
 
-impl DivAssign<usize> for TimeWindow
+impl DivAssign<usize> for TimeSpans
 {
     fn div_assign(&mut self, factor: usize)
     {
@@ -410,7 +410,7 @@ impl DivAssign<usize> for TimeWindow
     }
 }
 
-impl MulAssign<f64> for TimeWindow
+impl MulAssign<f64> for TimeSpans
 {
     #[inline]
     fn mul_assign(&mut self, factor: f64) {
@@ -420,16 +420,16 @@ impl MulAssign<f64> for TimeWindow
     }
 }
 
-impl DivAssign<f64> for TimeWindow {
+impl DivAssign<f64> for TimeSpans {
     #[inline] fn div_assign(&mut self, factor: f64) { *self *= 1./factor }
 }
 
-impl Mul<TimeWindow> for i64 {
-    type Output = TimeWindow;
-    #[inline] fn mul(self, t: TimeWindow) -> Self::Output { t * self }
+impl Mul<TimeSpans> for i64 {
+    type Output = TimeSpans;
+    #[inline] fn mul(self, t: TimeSpans) -> Self::Output { t * self }
 }
 
-impl Mul<TimeWindow> for f64 {
-    type Output = TimeWindow;
-    #[inline] fn mul(self, t: TimeWindow) -> Self::Output { t * self }
+impl Mul<TimeSpans> for f64 {
+    type Output = TimeSpans;
+    #[inline] fn mul(self, t: TimeSpans) -> Self::Output { t * self }
 }

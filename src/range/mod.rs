@@ -1,5 +1,5 @@
 use std::ops::RangeFull;
-use crate::{TimePoint, TimeRange};
+use crate::{TimePoint, TimeInterval};
 
 mod range;
 mod rangefrom;
@@ -10,8 +10,8 @@ mod rangeincl;
 
 
 // not really useful, just for fun...
-impl<T:TimePoint> From<RangeFull> for TimeRange<T> {
-    #[inline] fn from(_: RangeFull) -> Self { TimeRange::all() }
+impl<T:TimePoint> From<RangeFull> for TimeInterval<T> {
+    #[inline] fn from(_: RangeFull) -> Self { TimeInterval::all() }
 }
 
 

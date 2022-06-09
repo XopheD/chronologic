@@ -18,13 +18,13 @@ macro_rules! timecomplsingle {
                 let before = self.just_before();
                 let after = self.just_after();
                 if before.is_past_infinite() {
-                    TimeSet(vec![ TimeRange { lower: after, upper: Self::INFINITE } ])
+                    TimeSet(vec![ TimeInterval { lower: after, upper: Self::INFINITE } ])
                 } else if after.is_future_infinite() {
-                    TimeSet(vec![ TimeRange { lower: -Self::INFINITE, upper: before } ])
+                    TimeSet(vec![ TimeInterval { lower: -Self::INFINITE, upper: before } ])
                 } else {
                     TimeSet(vec![
-                        TimeRange { lower: -Self::INFINITE, upper: before },
-                        TimeRange { lower: after, upper: Self::INFINITE },
+                        TimeInterval { lower: -Self::INFINITE, upper: before },
+                        TimeInterval { lower: after, upper: Self::INFINITE },
                     ])
                 }
             }
@@ -34,7 +34,7 @@ macro_rules! timecomplsingle {
 timecomplsingle!(TimeValue);
 timecomplsingle!(Timestamp);
 
-impl<T:TimePoint> Not for TimeRange<T> {
+impl<T:TimePoint> Not for TimeInterval<T> {
 
     type Output = TimeSet<T>;
 
@@ -47,15 +47,15 @@ impl<T:TimePoint> Not for TimeRange<T> {
             if cut2.is_future_infinite() {
                 TimeSet::empty()
             } else {
-                TimeSet(vec![TimeRange { lower: cut2, upper: T::INFINITE }])
+                TimeSet(vec![TimeInterval { lower: cut2, upper: T::INFINITE }])
             }
         } else {
             if cut2.is_future_infinite() {
-                TimeSet(vec![TimeRange { lower: -T::INFINITE, upper: cut1 }])
+                TimeSet(vec![TimeInterval { lower: -T::INFINITE, upper: cut1 }])
             } else {
                 TimeSet(vec![
-                    TimeRange { lower: -T::INFINITE, upper: cut1 },
-                    TimeRange { lower: cut2, upper: T::INFINITE },
+                    TimeInterval { lower: -T::INFINITE, upper: cut1 },
+                    TimeInterval { lower: cut2, upper: T::INFINITE },
                 ])
             }
         }
@@ -70,16 +70,16 @@ impl<T:TimePoint> Not for TimeSet<T>
     {
         if let Some(first) = self.0.first() {
             let mut compl = Vec::with_capacity(self.0.len() + 1);
-            if let Ok(start) = TimeRange::before(first.lower.just_before()) {
+            if let Ok(start) = TimeInterval::before(first.lower.just_before()) {
                 compl.push(start);
             }
             let mut previous = first.upper.just_after();
             self.0.iter().skip(1)
                 .for_each(|tw| {
-                    compl.push(TimeRange { lower: previous, upper: tw.lower.just_before() });
+                    compl.push(TimeInterval { lower: previous, upper: tw.lower.just_before() });
                     previous = tw.upper.just_after();
                 });
-            if let Ok(end) = TimeRange::after(previous) {
+            if let Ok(end) = TimeInterval::after(previous) {
                 compl.push(end);
             }
             TimeSet(compl)
@@ -89,9 +89,9 @@ impl<T:TimePoint> Not for TimeSet<T>
     }
 }
 
-
-impl<T:TimePoint,TW> BitAndAssign<TW> for TimeRange<T>
-    where TW:TimeConvex+TimeSpan<TimePoint=T>
+/*
+impl<T:TimePoint,TW> BitAndAssign<TW> for TimeInterval<T>
+    where TW:TimeConvex+ TimeWindow<TimePoint=T>
 {
     #[inline]
     fn bitand_assign(&mut self, rhs: TW) {
@@ -105,8 +105,8 @@ impl<T:TimePoint,TW> BitAndAssign<TW> for TimeRange<T>
     }
 }
 
-impl<T:TimePoint,TW> BitOrAssign<TW> for TimeRange<T>
-    where TW:TimeConvex+TimeSpan<TimePoint=T>
+impl<T:TimePoint,TW> BitOrAssign<TW> for TimeInterval<T>
+    where TW:TimeConvex+ TimeWindow<TimePoint=T>
 {
     #[inline]
     fn bitor_assign(&mut self, rhs: TW)
@@ -122,32 +122,10 @@ impl<T:TimePoint,TW> BitOrAssign<TW> for TimeRange<T>
         }
     }
 }
-
-/*
-impl Not for TimeValue
-{
-    type Output = TimeWindow;
-    #[inline] fn not(self) -> Self::Output
-    {
-        let before = self.just_before();
-        let after = self.just_after();
-        if before.is_past_infinite() {
-            TimeSet(vec![ TimeRange { lower: after, upper: Self::INFINITE } ])
-        } else if after.is_future_infinite() {
-            TimeSet(vec![ TimeRange { lower: -Self::INFINITE, upper: before } ])
-        } else {
-            TimeSet(vec![
-                TimeRange { lower: -Self::INFINITE, upper: before },
-                TimeRange { lower: after, upper: Self::INFINITE },
-            ])
-        }
-    }
-}
 */
-
 impl<T:TimePoint,TW> BitAnd<TW> for TimeSet<T>
     where
-        TW:TimeSpan<TimePoint=T>+TimeConvex
+        TW: TimeWindow<TimePoint=T>+TimeConvex
 {
     type Output = Self;
 
@@ -184,7 +162,7 @@ impl<T:TimePoint> BitAnd for TimeSet<T>
     }
 }
 
-impl<T:TimePoint,TW:TimeSpan<TimePoint=T>+TimeConvex> BitAndAssign<TW> for TimeSet<T>
+impl<T:TimePoint,TW: TimeWindow<TimePoint=T>+TimeConvex> BitAndAssign<TW> for TimeSet<T>
 {
     fn bitand_assign(&mut self, other: TW)
     {
@@ -211,7 +189,7 @@ impl<T:TimePoint> BitAndAssign for TimeSet<T>
     }
 }
 
-impl<T:TimePoint,TW:TimeSpan<TimePoint=T>+Not<Output=TimeSet<T>>> BitOr<TW> for TimeSet<T>
+impl<T:TimePoint,TW: TimeWindow<TimePoint=T>+Not<Output=TimeSet<T>>> BitOr<TW> for TimeSet<T>
 {
     type Output = Self;
 
@@ -221,7 +199,7 @@ impl<T:TimePoint,TW:TimeSpan<TimePoint=T>+Not<Output=TimeSet<T>>> BitOr<TW> for 
     }
 }
 
-impl<T:TimePoint,TW:TimeSpan<TimePoint=T>+Not<Output=TimeSet<T>>> BitOrAssign<TW> for TimeSet<T>
+impl<T:TimePoint,TW: TimeWindow<TimePoint=T>+Not<Output=TimeSet<T>>> BitOrAssign<TW> for TimeSet<T>
 {
     fn bitor_assign(&mut self, other: TW) {
         *self = self.clone() | other
@@ -229,7 +207,22 @@ impl<T:TimePoint,TW:TimeSpan<TimePoint=T>+Not<Output=TimeSet<T>>> BitOrAssign<TW
 }
 
 
-impl<T:TimePoint> BitOr for TimeRange<T>
+impl<T:TimePoint> BitAnd for TimeInterval<T>
+{
+    type Output = TimeSet<T>;
+
+    fn bitand(self, other: Self) -> Self::Output
+    {
+        if let Some(tw) = self.intersection(&other) {
+            tw.into()
+        } else {
+            TimeSet::empty()
+        }
+    }
+}
+
+
+impl<T:TimePoint> BitOr for TimeInterval<T>
 {
     type Output = TimeSet<T>;
 
@@ -240,7 +233,7 @@ impl<T:TimePoint> BitOr for TimeRange<T>
         } else if other.upper < self.lower.just_before() {
             TimeSet(vec![other, self])
         } else {
-            TimeSet(vec![ TimeRange{
+            TimeSet(vec![ TimeInterval {
                 lower: self.lower.min(other.lower),
                 upper: self.upper.max(other.upper)
             }])

@@ -1,144 +1,102 @@
-use std::fmt;
-use std::ops::{Neg, Not};
-use crate::*;
+use std::ops::Neg;
+use crate::TimeInterval;
 
-/// A union of time intervals (timevalues)
-pub type TimeWindow = TimeSet<TimeValue>;
+/// # A duration value or a timestamp
+pub trait TimePoint : Clone+Copy+Eq+Ord+Neg<Output=Self> {
 
-/// A union of time slots (timestamp)
-pub type TimeSlots = TimeSet<Timestamp>;
+    /// The infinite time point (&infin;)
+    const INFINITE: Self;
 
-/// # A union of time ranges
-#[derive(Clone, Eq, PartialEq, Hash, Default)]
-pub struct TimeSet<T:TimePoint>(pub(crate) Vec<TimeRange<T>>);
+    /// Checks if this value is finite
+    fn is_finite(&self) -> bool;
 
-impl<T:TimePoint> TimeSet<T>
-{
-    #[inline]
-    pub fn all() -> Self { Self(vec![TimeRange::all()]) }
+    /// Checks if this value is +&infin;
+    fn is_future_infinite(&self) -> bool;
 
-    #[inline]
-    pub fn convex(lower: T, upper: T) -> Self {
-        Self(TimeRange::new(lower, upper).into_iter().collect())
-    }
+    /// Checks if this value is -&infin;
+    fn is_past_infinite(&self) -> bool;
 
-    #[inline]
-    pub fn singleton(t: T) -> Self {
-        Self(TimeRange::singleton(t).into_iter().collect())
-    }
+    /// Returns a value *just after*
+    fn just_after(&self) -> Self;
 
-    #[inline]
-    pub fn empty() -> Self { Self(vec![]) }
+    /// Returns a value *just before*
+    fn just_before(&self) -> Self;
+}
 
-    #[inline]
-    pub fn iter(&self) -> std::slice::Iter<'_,TimeRange<T>> { self.0.iter() }
+/// # A set of timepoint
+pub trait TimeWindow {
+    /// The type of the bounds.
+    ///
+    /// This is also the type of the element managed by this time window.
+    type TimePoint: TimePoint;
+
+    /// Checks if this time window is empty
+    fn is_empty(&self) -> bool;
+
+    /// Checks if this time window contains exactly one value
+    ///
+    /// A singleton is not empty, is convex, is bounded
+    /// and its lower bound equals its upper bound.
+    fn is_singleton(&self) -> bool;
+
+    /// Checks if this time window is bounded
+    ///
+    /// It is also false if this time window is empty.
+    fn is_bounded(&self) -> bool;
+
+    /// Checks if this time window has a finite lower bound
+    ///
+    /// It is also false if this time window is empty.
+    fn is_low_bounded(&self) -> bool;
+
+    /// Checks if this time window has a finite upper bound
+    ///
+    /// It is also false if this time window is empty.
+    fn is_up_bounded(&self) -> bool;
+
+    /// Checks if this time window is an interval
+    fn is_convex(&self) -> bool;
+
+    /// The lower bound of the time window
+    ///
+    /// It panics if this time window is empty
+    fn lower_bound(&self) -> Self::TimePoint;
+
+    /// The upper bound of the time window
+    ///
+    /// It panics if this time window is empty
+    fn upper_bound(&self) -> Self::TimePoint;
+
 }
 
 
-impl<T:TimePoint> TimeSpan for TimeSet<T>
-{
-    type TimePoint = T;
+/// A convex (interval) time set
+pub trait TimeConvex: TimeWindow {
 
+    /// Checks if two convex intersect
     #[inline]
-    fn is_empty(&self) -> bool { self.0.is_empty() }
+    fn intersects<TW:TimeConvex+TimeWindow<TimePoint=Self::TimePoint>>(&self, tw: &TW) -> bool {
+        self.lower_bound() <= tw.upper_bound() && self.upper_bound() >= tw.lower_bound()
+    }
 
+    /// Compute intersection
+    ///
+    /// Returns `None` if intersection is empty
     #[inline]
-    fn is_singleton(&self) -> bool {
-        self.is_convex() && unsafe { self.0.get_unchecked(0).is_singleton() }
+    fn intersection<TW:TimeConvex+TimeWindow<TimePoint=Self::TimePoint>>(&self, tw: &TW) -> Option<TimeInterval<Self::TimePoint>> {
+        let lower = self.lower_bound().max(tw.lower_bound());
+        let upper = self.upper_bound().min(tw.upper_bound());
+        if lower > upper { None } else { Some(TimeInterval { lower, upper }) }
     }
 
+    /// Compute convex union
+    ///
+    /// Never fail
     #[inline]
-    fn is_bounded(&self) -> bool {
-        self.is_low_bounded() && self.is_up_bounded()
-    }
-
-    #[inline]
-    fn is_low_bounded(&self) -> bool {
-        self.0.first().map(|s| s.is_low_bounded()).unwrap_or(false)
-    }
-
-    #[inline]
-    fn is_up_bounded(&self) -> bool {
-        self.0.last().map(|s| s.is_up_bounded()).unwrap_or(false)
-    }
-
-    #[inline]
-    fn is_convex(&self) -> bool { self.0.len() == 1 }
-
-    #[inline]
-    fn lower_bound(&self) -> Self::TimePoint {
-        self.0.first().expect("empty interval").lower_bound()
-    }
-
-    #[inline]
-    fn upper_bound(&self) -> Self::TimePoint {
-        self.0.last().expect("empty interval").upper_bound()
-    }
-}
-
-
-impl<T:TimePoint> Neg for TimeSet<T>
-{
-    type Output = Self;
-
-    fn neg(self) -> Self::Output {
-        let mut neg = self.clone();
-        neg.0.iter_mut().for_each(|t| {
-            let tmp = t.upper;
-            t.upper = -t.lower;
-            t.lower = -tmp
-        });
-        neg.0.reverse();
-        neg
-    }
-}
-
-impl<T:TimePoint> IntoIterator for TimeSet<T>
-{
-    type Item = TimeRange<T>;
-    type IntoIter = std::vec::IntoIter<Self::Item>;
-
-    #[inline]
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
-
-impl<T,TW> FromIterator<TW> for TimeSet<T>
-    where
-        T:TimePoint,
-        TW:TimeConvex+TimeSpan<TimePoint=T>+Not<Output=Self>
-{
-    fn from_iter<I: IntoIterator<Item=TW>>(iter: I) -> Self {
-        iter.into_iter().fold(Self::empty(), |r,i| r|i)
-    }
-}
-
-
-impl<T:TimePoint+fmt::Debug> fmt::Debug for TimeSet<T>
-{
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
-    {
-        let mut iter = self.0.iter();
-        if let Some(first) = iter.next() {
-            write!(formatter, "{:?}", first)?;
-            iter.try_for_each(|tw| write!(formatter, "U{:?}", tw))
-        } else {
-            write!(formatter, "{{}}") /* empty set */
-        }
-    }
-}
-
-impl<T:TimePoint+fmt::Display> fmt::Display for TimeSet<T>
-{
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
-    {
-        let mut iter = self.0.iter();
-        if let Some(first) = iter.next() {
-            write!(formatter, "{}", first)?;
-            iter.try_for_each(|tw| write!(formatter, "U{}", tw))
-        } else {
-            write!(formatter, "{{}}") /* empty set */
+    fn convex_union<TW:TimeConvex+TimeWindow<TimePoint=Self::TimePoint>>(&self, tw: &TW) -> TimeInterval<Self::TimePoint> {
+        TimeInterval {
+            lower: self.lower_bound().min(tw.lower_bound()),
+            upper: self.upper_bound().max(tw.upper_bound())
         }
     }
 }

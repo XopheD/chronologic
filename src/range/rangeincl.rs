@@ -3,7 +3,7 @@ use crate::*;
 use crate::error::TimeError;
 
 
-impl<T:TimePoint> TimeSpan for RangeInclusive<T>
+impl<T:TimePoint> TimeWindow for RangeInclusive<T>
 {
     type TimePoint = T;
     #[inline] fn is_empty(&self) -> bool { RangeInclusive::is_empty(self) }
@@ -16,26 +16,18 @@ impl<T:TimePoint> TimeSpan for RangeInclusive<T>
     #[inline] fn upper_bound(&self) -> Self::TimePoint { *self.end() } // inclusive
 }
 
-impl<T:TimePoint> TimeConvex for RangeInclusive<T> {
-    #[inline]
-    fn to_timerange(&self) -> TimeRange<T> {
-        TimeRange::new(self.lower_bound(), self.upper_bound()).unwrap()
-    }
-}
-
-impl<T:TimePoint> TryFrom<RangeInclusive<T> > for TimeRange<T>
+impl<T:TimePoint> From<RangeInclusive<T> > for TimeInterval<T>
 {
-    type Error = TimeError;
     #[inline]
-    fn try_from(range: RangeInclusive<T>) -> Result<Self, Self::Error> {
-        TimeRange::new(range.lower_bound(), range.upper_bound())
+    fn from(range: RangeInclusive<T>) -> Self {
+        TimeInterval::new(range.lower_bound(), range.upper_bound()).unwrap()
     }
 }
 
 
 //--------------------- TIME RANGE TRANSLATION -----------------------------------
 
-impl<T> AddAssign<RangeInclusive<TimeValue>> for TimeRange<T>
+impl<T> AddAssign<RangeInclusive<TimeValue>> for TimeInterval<T>
     where T:TimePoint+AddAssign<TimeValue>
 {
     #[inline]
@@ -50,7 +42,7 @@ impl<T> AddAssign<RangeInclusive<TimeValue>> for TimeRange<T>
 }
 
 
-impl<T> SubAssign<RangeInclusive<TimeValue>> for TimeRange<T>
+impl<T> SubAssign<RangeInclusive<TimeValue>> for TimeInterval<T>
     where T:TimePoint+SubAssign<TimeValue>
 {
     #[inline]
@@ -64,50 +56,50 @@ impl<T> SubAssign<RangeInclusive<TimeValue>> for TimeRange<T>
     }
 }
 
-impl<T> Add<RangeInclusive<TimeValue>> for TimeRange<T>
+impl<T> Add<RangeInclusive<TimeValue>> for TimeInterval<T>
     where T:TimePoint+Add<TimeValue,Output=T>
 {
     type Output = Self;
     #[inline]
     fn add(self, other: RangeInclusive<TimeValue>) -> Self::Output {
-        TimeRange::new(
+        TimeInterval::new(
             self.lower+other.lower_bound(),
             self.upper+other.upper_bound()
         ).unwrap()
     }
 }
 
-impl<T> Sub<RangeInclusive<TimeValue>> for TimeRange<T>
+impl<T> Sub<RangeInclusive<TimeValue>> for TimeInterval<T>
     where T:TimePoint+Sub<TimeValue,Output=T>
 {
     type Output = Self;
     #[inline]
     fn sub(self, other: RangeInclusive<TimeValue>) -> Self::Output {
-        TimeRange::new(
+        TimeInterval::new(
             self.lower-other.upper_bound(),
             self.upper-other.lower_bound()
         ).unwrap()
     }
 }
 
-impl Add<RangeInclusive<Timestamp>> for TimeInterval
+impl Add<RangeInclusive<Timestamp>> for TimeSpan
 {
     type Output = TimeSlot;
     #[inline]
     fn add(self, other: RangeInclusive<Timestamp>) -> Self::Output {
-        TimeRange::new(
+        TimeInterval::new(
             self.lower+other.lower_bound(),
             self.upper+other.upper_bound()
         ).unwrap()
     }
 }
 
-impl Sub<RangeInclusive<Timestamp>> for TimeInterval
+impl Sub<RangeInclusive<Timestamp>> for TimeSpan
 {
     type Output = TimeSlot;
     #[inline]
     fn sub(self, other: RangeInclusive<Timestamp>) -> Self::Output {
-        TimeRange::new(
+        TimeInterval::new(
             self.lower-other.upper_bound(),
             self.upper-other.lower_bound()
         ).unwrap()
@@ -123,7 +115,7 @@ impl<T> AddAssign<RangeInclusive<TimeValue>> for TimeSet<T>
 {
     #[inline]
     fn add_assign(&mut self, other: RangeInclusive<TimeValue>) {
-        *self += other.to_timerange();
+        *self += TimeSpan::from(other);
     }
 }
 
@@ -132,7 +124,7 @@ impl<T> SubAssign<RangeInclusive<TimeValue>> for TimeSet<T>
 {
     #[inline]
     fn sub_assign(&mut self, other: RangeInclusive<TimeValue>) {
-        *self -= other.to_timerange()
+        *self -= TimeSpan::from(other);
     }
 }
 
@@ -142,7 +134,7 @@ impl<T> Add<RangeInclusive<TimeValue>> for TimeSet<T>
     type Output = TimeSet<T>;
     #[inline]
     fn add(self, other: RangeInclusive<TimeValue>) -> Self::Output {
-        self + other.to_timerange()
+        self + TimeSpan::from(other)
     }
 }
 
@@ -151,6 +143,6 @@ impl<T> Sub<RangeInclusive<TimeValue>> for TimeSet<T>
 {
     type Output = TimeSet<T>;
     #[inline] fn sub(self, other: RangeInclusive<TimeValue>) -> Self::Output {
-        self - other.to_timerange()
+        self - TimeSpan::from(other)
     }
 }

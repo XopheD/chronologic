@@ -87,25 +87,25 @@ impl Sub<Timestamp> for TimeValue {
 
 //---------------------- TIMERANGE<T> OUTPUT ------------------------
 
-impl<T> Add<TimeValue> for TimeRange<T>
+impl<T> Add<TimeValue> for TimeInterval<T>
     where T:TimePoint+Add<TimeValue,Output=T>
 {
     type Output = Self;
     #[inline] fn add(self, other: TimeValue) -> Self::Output {
-        TimeRange::new(self.lower + other, self.upper + other).unwrap()
+        TimeInterval::new(self.lower + other, self.upper + other).unwrap()
     }
 }
 
-impl<T> Sub<TimeValue> for TimeRange<T>
+impl<T> Sub<TimeValue> for TimeInterval<T>
     where T:TimePoint+Sub<TimeValue,Output=T>
 {
     type Output = Self;
     #[inline] fn sub(self, other: TimeValue) -> Self::Output {
-        TimeRange::new(self.lower - other, self.upper - other).unwrap()
+        TimeInterval::new(self.lower - other, self.upper - other).unwrap()
     }
 }
 
-impl<T> AddAssign<TimeValue> for TimeRange<T>
+impl<T> AddAssign<TimeValue> for TimeInterval<T>
     where T:TimePoint+AddAssign<TimeValue>
 {
     #[inline]
@@ -116,7 +116,7 @@ impl<T> AddAssign<TimeValue> for TimeRange<T>
     }
 }
 
-impl<T> SubAssign<TimeValue> for TimeRange<T>
+impl<T> SubAssign<TimeValue> for TimeInterval<T>
     where T:TimePoint+SubAssign<TimeValue>
 {
     #[inline]
@@ -127,94 +127,94 @@ impl<T> SubAssign<TimeValue> for TimeRange<T>
     }
 }
 
-impl<T> Add<TimeRange<T>> for TimeValue
+impl<T> Add<TimeInterval<T>> for TimeValue
     where T:TimePoint+Add<TimeValue,Output=T>
 {
-    type Output = TimeRange<T>;
-    #[inline] fn add(self, other: TimeRange<T>) -> Self::Output { other + self }
+    type Output = TimeInterval<T>;
+    #[inline] fn add(self, other: TimeInterval<T>) -> Self::Output { other + self }
 }
 
-impl<T> Sub<TimeRange<T>> for TimeValue
+impl<T> Sub<TimeInterval<T>> for TimeValue
     where T:TimePoint+Add<TimeValue,Output=T>
 {
-    type Output = TimeRange<T>;
-    #[inline] fn sub(self, other: TimeRange<T>) -> Self::Output { (-other) + self }
+    type Output = TimeInterval<T>;
+    #[inline] fn sub(self, other: TimeInterval<T>) -> Self::Output { (-other) + self }
 }
 
-impl<T> Add<TimeInterval> for TimeRange<T>
+impl<T> Add<TimeSpan> for TimeInterval<T>
     where T:TimePoint+Add<TimeValue,Output=T>
 {
     type Output = Self;
-    #[inline] fn add(self, other: TimeInterval) -> Self::Output {
-        TimeRange::new(self.lower + other.lower, self.upper + other.upper).unwrap()
+    #[inline] fn add(self, other: TimeSpan) -> Self::Output {
+        TimeInterval::new(self.lower + other.lower, self.upper + other.upper).unwrap()
     }
 }
 
-impl<T> Sub<TimeInterval> for TimeRange<T>
+impl<T> Sub<TimeSpan> for TimeInterval<T>
     where T:TimePoint+Sub<TimeValue,Output=T>
 {
     type Output = Self;
-    #[inline] fn sub(self, other: TimeInterval) -> Self::Output {
-        TimeRange::new(self.lower - other.upper, self.upper - other.lower).unwrap()
+    #[inline] fn sub(self, other: TimeSpan) -> Self::Output {
+        TimeInterval::new(self.lower - other.upper, self.upper - other.lower).unwrap()
     }
 }
 
-impl<T> AddAssign<TimeInterval> for TimeRange<T>
+impl<T> AddAssign<TimeSpan> for TimeInterval<T>
     where T:TimePoint+AddAssign<TimeValue>
 {
     #[inline]
-    fn add_assign(&mut self, other: TimeInterval) {
+    fn add_assign(&mut self, other: TimeSpan) {
         self.lower += other.lower;
         self.upper += other.upper;
         assert!( (self.lower != self.upper) || !self.lower.is_finite() );
     }
 }
 
-impl<T> SubAssign<TimeInterval> for TimeRange<T>
+impl<T> SubAssign<TimeSpan> for TimeInterval<T>
     where T:TimePoint+SubAssign<TimeValue>
 {
     #[inline]
-    fn sub_assign(&mut self, other: TimeInterval) {
+    fn sub_assign(&mut self, other: TimeSpan) {
         self.lower -= other.upper;
         self.upper -= other.lower;
         assert!( (self.lower != self.upper) || !self.lower.is_finite() );
     }
 }
 
-impl Add<TimeInterval> for Timestamp {
+impl Add<TimeSpan> for Timestamp {
     type Output = TimeSlot;
     #[inline]
-    fn add(self, other: TimeInterval) -> Self::Output {
+    fn add(self, other: TimeSpan) -> Self::Output {
         TimeSlot::new(self + other.lower, self + other.upper).unwrap()
     }
 }
 
-impl Sub<TimeInterval> for Timestamp {
+impl Sub<TimeSpan> for Timestamp {
     type Output = TimeSlot;
     #[inline]
-    fn sub(self, other: TimeInterval) -> Self::Output {
+    fn sub(self, other: TimeSpan) -> Self::Output {
         TimeSlot::new(self - other.upper, self - other.lower).unwrap()
     }
 }
 
 
-impl Add<Timestamp> for TimeInterval {
+impl Add<Timestamp> for TimeSpan {
     type Output = TimeSlot;
     #[inline]
     fn add(self, other: Timestamp) -> Self::Output { other + self }
 }
 
-impl Sub<Timestamp> for TimeInterval {
+impl Sub<Timestamp> for TimeSpan {
     type Output = TimeSlot;
     #[inline]
     fn sub(self, other: Timestamp) -> Self::Output { (-other) + self }
 }
 
 impl Sub for TimeSlot {
-    type Output = TimeInterval;
+    type Output = TimeSpan;
     #[inline]
     fn sub(self, other: Self) -> Self::Output {
-        TimeRange::new(
+        TimeInterval::new(
             self.lower - other.upper,
             self.upper - other.lower
         ).unwrap()
@@ -222,10 +222,10 @@ impl Sub for TimeSlot {
 }
 
 impl Sub<Timestamp> for TimeSlot {
-    type Output = TimeInterval;
+    type Output = TimeSpan;
     #[inline]
     fn sub(self, other: Timestamp) -> Self::Output {
-        TimeRange::new(
+        TimeInterval::new(
             self.lower - other,
             self.upper - other
         ).unwrap()
@@ -233,10 +233,10 @@ impl Sub<Timestamp> for TimeSlot {
 }
 
 impl Sub<TimeSlot> for Timestamp {
-    type Output = TimeInterval;
+    type Output = TimeSpan;
     #[inline]
     fn sub(self, other: TimeSlot) -> Self::Output {
-        TimeRange::new(
+        TimeInterval::new(
             self - other.upper,
             self - other.lower
         ).unwrap()
@@ -246,7 +246,7 @@ impl Sub<TimeSlot> for Timestamp {
 //------------------------ TIMESET<T> OUTPUT ------------------------
 
 impl<T:TimePoint> Add<TimeValue> for TimeSet<T>
-    where TimeRange<T>: AddAssign<TimeValue>
+    where TimeInterval<T>: AddAssign<TimeValue>
 {
     type Output = Self;
     #[inline]
@@ -258,7 +258,7 @@ impl<T:TimePoint> Add<TimeValue> for TimeSet<T>
 }
 
 impl<T:TimePoint> Sub<TimeValue> for TimeSet<T>
-    where TimeRange<T>: SubAssign<TimeValue>
+    where TimeInterval<T>: SubAssign<TimeValue>
 {
     type Output = Self;
     #[inline]
@@ -270,7 +270,7 @@ impl<T:TimePoint> Sub<TimeValue> for TimeSet<T>
 }
 
 impl<T:TimePoint> AddAssign<TimeValue> for TimeSet<T>
-    where TimeRange<T>: AddAssign<TimeValue>
+    where TimeInterval<T>: AddAssign<TimeValue>
 {
     #[inline]
     fn add_assign(&mut self, t: TimeValue) {
@@ -281,7 +281,7 @@ impl<T:TimePoint> AddAssign<TimeValue> for TimeSet<T>
 }
 
 impl<T:TimePoint> SubAssign<TimeValue> for TimeSet<T>
-    where TimeRange<T>: SubAssign<TimeValue>
+    where TimeInterval<T>: SubAssign<TimeValue>
 {
     #[inline]
     fn sub_assign(&mut self, t: TimeValue) {
@@ -291,7 +291,7 @@ impl<T:TimePoint> SubAssign<TimeValue> for TimeSet<T>
     }
 }
 
-impl Add<Timestamp> for TimeWindow
+impl Add<Timestamp> for TimeSpans
 {
     type Output = TimeSlots;
     #[inline]
@@ -302,7 +302,7 @@ impl Add<Timestamp> for TimeWindow
     }
 }
 
-impl Sub<Timestamp> for TimeWindow
+impl Sub<Timestamp> for TimeSpans
 {
     type Output = TimeSlots;
     #[inline]
@@ -314,76 +314,76 @@ impl Sub<Timestamp> for TimeWindow
 }
 
 
-impl Add<TimeWindow> for Timestamp
+impl Add<TimeSpans> for Timestamp
 {
     type Output = TimeSlots;
     #[inline]
-    fn add(self, other: TimeWindow) -> Self::Output { other + self }
+    fn add(self, other: TimeSpans) -> Self::Output { other + self }
 }
 
-impl Sub<TimeWindow> for Timestamp
+impl Sub<TimeSpans> for Timestamp
 {
     type Output = TimeSlots;
     #[inline]
-    fn sub(self, other: TimeWindow) -> Self::Output {
+    fn sub(self, other: TimeSpans) -> Self::Output {
         other.iter()
             .map(|i| self - *i)
             .collect()
     }
 }
 
-impl<T> Add<TimeInterval> for TimeSet<T>
+impl<T> Add<TimeSpan> for TimeSet<T>
     where
         T:TimePoint+Add<TimeValue,Output=T>,
 {
     type Output = Self;
     #[inline]
-    fn add(self, other: TimeInterval) -> Self::Output {
+    fn add(self, other: TimeSpan) -> Self::Output {
         self.0.into_iter()
             .fold(Self::empty(), |r,i| r|(i+other))
     }
 }
 
-impl<T> Sub<TimeInterval> for TimeSet<T>
+impl<T> Sub<TimeSpan> for TimeSet<T>
     where
         T:TimePoint+Sub<TimeValue,Output=T>,
 {
     type Output = Self;
     #[inline]
-    fn sub(self, other: TimeInterval) -> Self::Output
+    fn sub(self, other: TimeSpan) -> Self::Output
     {
         self.0.into_iter()
             .fold(Self::empty(), |r,i| r|(i-other))
     }
 }
 
-impl<T> AddAssign<TimeInterval> for TimeSet<T>
+impl<T> AddAssign<TimeSpan> for TimeSet<T>
     where
         T:TimePoint+Add<TimeValue,Output=T>,
 {
     #[inline]
-    fn add_assign(&mut self, other: TimeInterval) {
+    fn add_assign(&mut self, other: TimeSpan) {
         *self = self.clone() + other
     }
 }
 
-impl<T> SubAssign<TimeInterval> for TimeSet<T>
+impl<T> SubAssign<TimeSpan> for TimeSet<T>
     where
         T:TimePoint+Sub<TimeValue,Output=T>,
 {
     #[inline]
-    fn sub_assign(&mut self, other: TimeInterval) {
+    fn sub_assign(&mut self, other: TimeSpan) {
         *self = self.clone() - other
     }
 }
 
-impl<T> Add<TimeWindow> for TimeSet<T>
+impl<T> Add<TimeSpans> for TimeSet<T>
     where
         T:TimePoint+Add<TimeValue,Output=T>,
 {
     type Output = Self;
     #[inline]
-    fn add(self, other: TimeWindow) -> Self::Output
+    fn add(self, other: TimeSpans) -> Self::Output
     {
         self.0.into_iter()
             .map(|i| other.iter().copied().map(move |j| (i,j)))
@@ -393,13 +393,13 @@ impl<T> Add<TimeWindow> for TimeSet<T>
     }
 }
 
-impl<T> Sub<TimeWindow> for TimeSet<T>
+impl<T> Sub<TimeSpans> for TimeSet<T>
     where
         T:TimePoint+Sub<TimeValue,Output=T>,
 {
     type Output = Self;
     #[inline]
-    fn sub(self, other: TimeWindow) -> Self::Output
+    fn sub(self, other: TimeSpans) -> Self::Output
     {
         self.0.into_iter()
             .map(|i| other.iter().copied().map(move |j| (i,j)))
@@ -409,22 +409,22 @@ impl<T> Sub<TimeWindow> for TimeSet<T>
     }
 }
 
-impl<T> AddAssign<TimeWindow> for TimeSet<T>
+impl<T> AddAssign<TimeSpans> for TimeSet<T>
     where
         T:TimePoint+Add<TimeValue,Output=T>,
 {
     #[inline]
-    fn add_assign(&mut self, other: TimeWindow) {
+    fn add_assign(&mut self, other: TimeSpans) {
         *self = self.clone() + other
     }
 }
 
-impl<T> SubAssign<TimeWindow> for TimeSet<T>
+impl<T> SubAssign<TimeSpans> for TimeSet<T>
     where
         T:TimePoint+Sub<TimeValue,Output=T>,
 {
     #[inline]
-    fn sub_assign(&mut self, other: TimeWindow) {
+    fn sub_assign(&mut self, other: TimeSpans) {
         *self = self.clone() - other
     }
 }
