@@ -17,6 +17,12 @@ pub type TimeSlot = TimeInterval<Timestamp>;
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub struct TimeInterval<T:TimePoint> { pub(crate) lower:T, pub(crate) upper:T }
 
+impl Default for TimeSpan {
+    #[inline] fn default() -> Self {
+        TimeSpan { lower: TimeValue::default(), upper: TimeValue::default() }
+    }
+}
+
 impl<T:TimePoint> TimeInterval<T>
 {
     #[inline]
