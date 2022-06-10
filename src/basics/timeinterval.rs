@@ -4,20 +4,21 @@ use std::ops::{Add, Neg, Sub};
 use crate::error::TimeError;
 use super::*;
 
-/// # A non-empty range of time values
+/// # An alias for [`TimeInterval<TimeValue>`]
 ///
 /// As time values are discrete, we always have
 /// ]a,b[ = [a+1,b-1]
 pub type TimeSpan = TimeInterval<TimeValue>;
 
-/// # A non-empty range of timestamps
+/// # An alias for [`TimeInterval<Timestamp>`]
 pub type TimeSlot = TimeInterval<Timestamp>;
 
-/// # A generic non emptyinterval between two time points
+/// # A generic non empty interval between two time points
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub struct TimeInterval<T:TimePoint> { pub(crate) lower:T, pub(crate) upper:T }
 
 impl Default for TimeSpan {
+    /// The default timespan is defined as `{0}`
     #[inline] fn default() -> Self {
         TimeSpan { lower: TimeValue::default(), upper: TimeValue::default() }
     }

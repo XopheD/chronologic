@@ -3,18 +3,11 @@
 use crate::*;
 use std::ops::*;
 
-
-//---------------- COMPLEMENTARY SET (!) ------------------
-
-
 macro_rules! timecomplsingle {
     ($time:ty) => {
-        impl Not for $time
-        {
+        impl Not for $time {
             type Output = TimeSet<Self>;
-
-            fn not(self) -> Self::Output
-            {
+            fn not(self) -> Self::Output {
                 let before = self.just_before();
                 let after = self.just_after();
                 if before.is_past_infinite() {
@@ -42,7 +35,6 @@ impl<T:TimePoint> Not for TimeInterval<T> {
     {
         let cut1 = self.lower_bound().just_before();
         let cut2 = self.upper_bound().just_after();
-
         if cut1.is_past_infinite() {
             if cut2.is_future_infinite() {
                 TimeSet::empty()
@@ -89,40 +81,7 @@ impl<T:TimePoint> Not for TimeSet<T>
     }
 }
 
-/*
-impl<T:TimePoint,TW> BitAndAssign<TW> for TimeInterval<T>
-    where TW:TimeConvex+ TimeWindow<TimePoint=T>
-{
-    #[inline]
-    fn bitand_assign(&mut self, rhs: TW) {
-        if self.lower < rhs.lower_bound() {
-            self.lower = rhs.lower_bound();
-        }
-        if self.upper > rhs.upper_bound() {
-            self.upper = rhs.upper_bound();
-        }
-        assert!(self.lower > self.upper, "empty intersection")
-    }
-}
 
-impl<T:TimePoint,TW> BitOrAssign<TW> for TimeInterval<T>
-    where TW:TimeConvex+ TimeWindow<TimePoint=T>
-{
-    #[inline]
-    fn bitor_assign(&mut self, rhs: TW)
-    {
-        assert!(self.upper.just_after() >= rhs.lower_bound(), "disjoint union");
-        assert!(self.lower.just_before() <= rhs.upper_bound(), "disjoint union");
-
-        if self.lower > rhs.lower_bound() {
-            self.lower = rhs.lower_bound();
-        }
-        if self.upper < rhs.upper_bound() {
-            self.upper = rhs.upper_bound();
-        }
-    }
-}
-*/
 impl<T:TimePoint,TW> BitAnd<TW> for TimeSet<T>
     where
         TW: TimeWindow<TimePoint=T>+TimeConvex
@@ -189,7 +148,9 @@ impl<T:TimePoint> BitAndAssign for TimeSet<T>
     }
 }
 
-impl<T:TimePoint,TW: TimeWindow<TimePoint=T>+Not<Output=TimeSet<T>>> BitOr<TW> for TimeSet<T>
+impl<T:TimePoint,TW> BitOr<TW> for TimeSet<T>
+    where
+        TW: TimeWindow<TimePoint=T>+Not<Output=TimeSet<T>>
 {
     type Output = Self;
 
@@ -199,7 +160,9 @@ impl<T:TimePoint,TW: TimeWindow<TimePoint=T>+Not<Output=TimeSet<T>>> BitOr<TW> f
     }
 }
 
-impl<T:TimePoint,TW: TimeWindow<TimePoint=T>+Not<Output=TimeSet<T>>> BitOrAssign<TW> for TimeSet<T>
+impl<T:TimePoint,TW> BitOrAssign<TW> for TimeSet<T>
+    where
+        TW: TimeWindow<TimePoint=T>+Not<Output=TimeSet<T>>
 {
     fn bitor_assign(&mut self, other: TW) {
         *self = self.clone() | other
@@ -241,4 +204,22 @@ impl<T:TimePoint> BitOr for TimeInterval<T>
     }
 }
 
+pub trait TimeRemoval<TW> {
+    fn remove(&mut self, tw: &TW);
+}
 
+impl<T:TimePoint> TimeRemoval<Self> for TimeSet<T>
+{
+    fn remove(&mut self, tw: &Self) {
+        *self &= !tw.clone()
+    }
+}
+
+impl<T:TimePoint,TW> TimeRemoval<TW> for TimeSet<T>
+    where
+        TW:TimeConvex+TimeWindow<TimePoint=T>
+{
+    fn remove(&mut self, tw: &TW) {
+        *self &= !TimeInterval { lower: tw.lower_bound(), upper: tw.upper_bound() }
+    }
+}

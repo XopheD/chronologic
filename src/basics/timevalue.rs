@@ -1,8 +1,6 @@
 use std::ops::Neg;
-use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
 use std::time;
 use std::fmt;
-use std::time::SystemTime;
 use chrono::Duration;
 
 use super::*;
@@ -10,12 +8,8 @@ use super::*;
 /// # A single time value (duration)
 ///
 /// This time value represent a duration and could be infinite.
-#[derive(Copy, Clone, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct TimeValue(pub(crate) i64);
-
-/// # A UTC timestamp
 #[derive(Copy, Clone, Default, Hash, Eq, PartialEq, Ord, PartialOrd)]
-pub struct Timestamp(pub(crate) TimeValue);
+pub struct TimeValue(pub(crate) i64);
 
 impl TimeValue {
 
@@ -54,13 +48,13 @@ impl TimeValue {
     }
 
     #[inline]
-    pub fn from_days(days:i64) -> Self { TimeValue::from_hours(24) }
+    pub fn from_days(days:i64) -> Self { TimeValue::from_hours(24*days) }
 
     #[inline]
-    pub fn from_hours(hours:i64) -> Self { TimeValue::from_minutes(60) }
+    pub fn from_hours(hours:i64) -> Self { TimeValue::from_mins(60*hours) }
 
     #[inline]
-    pub fn from_minutes(minutes:i64) -> Self { TimeValue::from_secs(60) }
+    pub fn from_mins(mins:i64) -> Self { TimeValue::from_secs(60*mins) }
 
     #[inline]
     pub fn from_millis(millis:i64) -> Self { TimeValue::from_fract(millis, 1_000) }
@@ -272,75 +266,6 @@ impl fmt::Display for TimeValue
     }
 }
 
-impl fmt::Debug for Timestamp
-{
-    #[inline]
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(formatter, "t={:?}", self.0)
-    }
-}
-
-impl fmt::Display for Timestamp
-{
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
-    {
-        if self.0.is_positive() {
-            if self.is_future_infinite() {
-                write!(formatter, "+oo")
-            } else {
-                write!(formatter, "{}", self.to_datetime())
-            }
-        } else {
-            if self.is_past_infinite() {
-                write!(formatter, "-oo")
-            } else {
-                write!(formatter, "1970-01-01 00:00:00 UTC - {:?}", -self.0)
-            }
-        }
-    }
-}
-
-impl Timestamp {
-
-    #[inline]
-    pub fn now() -> Self {
-        Self(SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().into())
-    }
-
-    #[inline]
-    pub fn to_datetime(&self) -> DateTime<Utc>
-    {
-        DateTime::<Utc>::from_utc((*self).into(), Utc)
-    }
-
-    #[inline]
-    pub fn floor(self, period:TimeValue) -> Self
-    {
-        Self(self.0.floor(period))
-    }
-
-    #[inline]
-    pub fn ceil(self, period:TimeValue) -> Self
-    {
-        Self(self.0.ceil(period))
-    }
-}
-
-impl Neg for Timestamp {
-    type Output = Self;
-    #[inline] fn neg(self) -> Self::Output { Self(-self.0) }
-}
-
-impl TimePoint for Timestamp
-{
-    const INFINITE: Self = Self(TimeValue::INFINITE);
-    #[inline] fn is_finite(&self) -> bool { self.0.is_finite() }
-    #[inline] fn is_future_infinite(&self) -> bool { self.0.is_future_infinite() }
-    #[inline] fn is_past_infinite(&self) -> bool { self.0.is_past_infinite() }
-    #[inline] fn just_after(&self) -> Self { Self(self.0.just_after()) }
-    #[inline] fn just_before(&self) -> Self { Self(self.0.just_before()) }
-}
-
 impl<T:TimePoint> TimeWindow for T
 {
     type TimePoint = Self;
@@ -362,26 +287,3 @@ impl<T:TimePoint> TimeWindow for T
     fn upper_bound(&self) -> Self::TimePoint { *self }
 }
 
-impl Into<NaiveDateTime> for Timestamp
-{
-    #[inline]
-    fn into(self) -> NaiveDateTime {
-        NaiveDateTime::from_timestamp( self.0.as_secs(), self.0.subsec_nanos() as u32)
-    }
-}
-
-impl From<NaiveDateTime> for Timestamp
-{
-    #[inline]
-    fn from(t: NaiveDateTime) -> Self {
-        Self(TimeValue::from_nanos(t.timestamp_nanos()))
-    }
-}
-
-impl<Tz:TimeZone> From<DateTime<Tz>> for Timestamp
-{
-    #[inline]
-    fn from(t: DateTime<Tz>) -> Self {
-        Self(TimeValue::from_nanos(t.timestamp_nanos()))
-    }
-}

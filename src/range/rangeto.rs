@@ -1,6 +1,5 @@
 use std::ops::{RangeTo, Add, Sub, AddAssign, SubAssign};
 use crate::*;
-use crate::error::TimeError;
 
 
 impl<T:TimePoint> TimeWindow for RangeTo<T>
@@ -15,6 +14,8 @@ impl<T:TimePoint> TimeWindow for RangeTo<T>
     #[inline] fn lower_bound(&self) -> Self::TimePoint { - Self::TimePoint::INFINITE }
     #[inline] fn upper_bound(&self) -> Self::TimePoint { self.end.just_before() } // not inclusive
 }
+
+impl<T:TimePoint> TimeConvex for RangeTo<T> {}
 
 impl<T:TimePoint> From<RangeTo<T> > for TimeInterval<T>
 {

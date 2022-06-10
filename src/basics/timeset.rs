@@ -3,18 +3,26 @@ use std::ops::{Neg, Not};
 use crate::*;
 use crate::error::TimeError;
 
-/// A union of time intervals (timevalues)
+/// A union of [`TimeSpan`] (aliased to [`TimeSet<TimeValue>`])
 pub type TimeSpans = TimeSet<TimeValue>;
 
-/// A union of time slots (timestamp)
+/// A union of [`TimeSlot`] (aliased to [`TimeSet<Timestamp>`])
 pub type TimeSlots = TimeSet<Timestamp>;
 
-/// # A union of time ranges
+/// # A union of time intervals
+///
+/// This is the more generic structure to keep a set of time points.
+/// It could be empty, convex or defined by pieces.
+///
+/// The inner list of time intervals is chronological sorted
+/// and all the inner intervals are disjoint. If, when added,
+/// two intervals overlaps, then they are merged.
 #[derive(Clone, Eq, PartialEq, Hash, Default)]
 pub struct TimeSet<T:TimePoint>(pub(crate) Vec<TimeInterval<T>>);
 
 impl<T:TimePoint> TimeSet<T>
 {
+    /// Returns the full interval `]-oo,+oo[`
     #[inline]
     pub fn all() -> Self { Self(vec![TimeInterval::all()]) }
 
@@ -37,7 +45,7 @@ impl<T:TimePoint> TimeSet<T>
     pub fn empty() -> Self { Self(vec![]) }
 
     #[inline]
-    pub fn iter(&self) -> std::slice::Iter<'_, TimeInterval<T>> { self.0.iter() }
+    pub fn as_slice(&self) -> &[TimeInterval<T>] { self.0.as_slice() }
 }
 
 
@@ -86,16 +94,9 @@ impl<T:TimePoint> TimeWindow for TimeSet<T>
 impl<T:TimePoint> Neg for TimeSet<T>
 {
     type Output = Self;
-
-    fn neg(self) -> Self::Output {
-        let mut neg = self.clone();
-        neg.0.iter_mut().for_each(|t| {
-            let tmp = t.upper;
-            t.upper = -t.lower;
-            t.lower = -tmp
-        });
-        neg.0.reverse();
-        neg
+    #[inline] fn neg(self) -> Self {
+        // negate each intervals AND reverse the list
+        Self(self.0.iter().rev().map(|&t| -t).collect())
     }
 }
 
@@ -103,7 +104,6 @@ impl<T:TimePoint> IntoIterator for TimeSet<T>
 {
     type Item = TimeInterval<T>;
     type IntoIter = std::vec::IntoIter<Self::Item>;
-
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
@@ -113,7 +113,7 @@ impl<T:TimePoint> IntoIterator for TimeSet<T>
 impl<T,TW> FromIterator<TW> for TimeSet<T>
     where
         T:TimePoint,
-        TW:TimeConvex+TimeWindow<TimePoint=T>+Not<Output=Self>
+        TW:TimeWindow<TimePoint=T>+Not<Output=Self>
 {
     fn from_iter<I: IntoIterator<Item=TW>>(iter: I) -> Self {
         iter.into_iter().fold(Self::empty(), |r,i| r|i)

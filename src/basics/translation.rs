@@ -296,7 +296,7 @@ impl Add<Timestamp> for TimeSpans
     type Output = TimeSlots;
     #[inline]
     fn add(self, other: Timestamp) -> Self::Output {
-        self.iter()
+        self.0.iter()
             .map(|i| *i + other)
             .collect()
     }
@@ -307,7 +307,7 @@ impl Sub<Timestamp> for TimeSpans
     type Output = TimeSlots;
     #[inline]
     fn sub(self, other: Timestamp) -> Self::Output {
-        self.iter()
+        self.0.iter()
             .map(|i| *i - other)
             .collect()
     }
@@ -326,7 +326,7 @@ impl Sub<TimeSpans> for Timestamp
     type Output = TimeSlots;
     #[inline]
     fn sub(self, other: TimeSpans) -> Self::Output {
-        other.iter()
+        other.0.iter()
             .map(|i| self - *i)
             .collect()
     }
@@ -386,7 +386,7 @@ impl<T> Add<TimeSpans> for TimeSet<T>
     fn add(self, other: TimeSpans) -> Self::Output
     {
         self.0.into_iter()
-            .map(|i| other.iter().copied().map(move |j| (i,j)))
+            .map(|i| other.0.iter().copied().map(move |j| (i,j)))
             .flatten()
             .map(|(a,b)| a+b)
             .collect()
@@ -402,7 +402,7 @@ impl<T> Sub<TimeSpans> for TimeSet<T>
     fn sub(self, other: TimeSpans) -> Self::Output
     {
         self.0.into_iter()
-            .map(|i| other.iter().copied().map(move |j| (i,j)))
+            .map(|i| other.0.iter().copied().map(move |j| (i,j)))
             .flatten()
             .map(|(a,b)| a-b)
             .collect()

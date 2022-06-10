@@ -1,10 +1,13 @@
 mod basics;
 mod range;
 
-pub mod relns;
-
-pub mod error;
-pub mod graph;
+mod relns;
+mod error;
+mod graph;
+mod agenda;
 
 pub use basics::*;
 pub use relns::*;
+pub use error::*;
+pub use graph::*;
+pub use agenda::*;

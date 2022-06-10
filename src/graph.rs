@@ -1,8 +1,6 @@
-#![doc(hidden)]
-
 use super::*;
 use std::cmp::{min,max};
-
+use embed_doc_image::embed_doc_image;
 
 /// # A graph of non disjunctive time constraints.
 
@@ -21,9 +19,8 @@ use std::cmp::{min,max};
 /// this graph is unique. For instance, the following figure shows a user defined
 /// constraints graph on the left side and the corresponding minimal graph on the
 /// right hand.
-/// <div align=center>
-/// <img src=../../../../../framework/images/fiat/TimeGraph-1.png>
-/// </div>
+///
+/// ![TimeGraph][timegraph-1]
 ///
 /// ## Global Propagation Algorithm
 /// We use a Floyd-Warshall path consistency algorithm
@@ -35,9 +32,9 @@ use std::cmp::{min,max};
 /// of three nodes (the ends of the constraints and any intermediate one) \[2\].<p>
 /// Any edge is updated by intersecting the current constraint and the computed one
 /// through a third node (see the following figure).
-/// <div align=center>
-/// <img src=../../../../../framework/images/fiat/TimeGraph-2.png>
-/// </div>
+///
+/// ![TimeGraph][timegraph-2]
+///
 /// A first algorithm can be to iterate this calculus untill the constraints remain
 /// stable. Another one is proposed to do the propagation is O(n<sup>3</sup>) where
 /// n is the size of the graph \[1\].
@@ -58,9 +55,8 @@ use std::cmp::{min,max};
 ///
 /// As an illustration, the following figure show a time graph with the associated
 /// time matrix:
-/// <div align=center>
-/// <img src=../../../../../framework/images/fiat/TimeGraph-3.png>
-/// </div>
+///
+/// ![TimeGraph][timegraph-3]
 ///
 /// ## References
 /// 1. C. Dousson. _"Suivi d'évolutions et reconnaissance de chroniques."_
@@ -70,6 +66,10 @@ use std::cmp::{min,max};
 /// 1. C.H. Papadimitriou and K. Steiglitz. _"Combinatorial optimization: algorithms and complexity."_
 /// 	Prentice-Hall, Englewood Cliffs, N.J. 1982.</li>
 ///
+#[embed_doc_image("timegraph-1", "images/timegraph-1.png")]
+#[embed_doc_image("timegraph-2", "images/timegraph-2.png")]
+#[embed_doc_image("timegraph-3", "images/timegraph-3.png")]
+
 #[derive(Clone)]
 pub struct TimeGraph {
     size : u32,
