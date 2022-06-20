@@ -3,6 +3,7 @@ use std::ops::{Div, DivAssign, Mul, MulAssign};
 
 //-------------- TIMEVALUE SCALING -----------------------------
 
+// GROUP 1: scale factor is always less than i64::MAX (abs value)
 macro_rules! timevalscalingsmall {
     ($scale: ty) => {
         impl Mul<$scale> for TimeValue {
@@ -26,6 +27,8 @@ timevalscalingsmall!(u16);
 timevalscalingsmall!(i32);
 timevalscalingsmall!(u32);
 timevalscalingsmall!(i64);
+
+// GROUP 2: scale factor is signed and could be greater than i64::MAX (abs value)
 
 macro_rules! timevalscalingbig {
     ($time: ty) => {
@@ -53,13 +56,42 @@ macro_rules! timevalscalingbig {
         }
     };
 }
-timevalscalingbig!(u64);
+
 timevalscalingbig!(i128);
-timevalscalingbig!(u128);
 timevalscalingbig!(isize);
-timevalscalingbig!(usize);
 timevalscalingbig!(f32);
 timevalscalingbig!(f64);
+
+// GROUP 3: scale factor is unsigned and could be greater than i64::MAX (abs value)
+
+macro_rules! timevalscalingubig {
+    ($time: ty) => {
+        impl Mul<$time> for TimeValue {
+            type Output = Self;
+            #[inline] fn mul(self, n: $time) -> Self::Output {
+                if n > INFINITE_TIME_VALUE as $time {
+                    TimeValue::INFINITE
+                } else {
+                    TimeValue::from_ticks(self.0.saturating_mul(n as i64))
+                }
+            }
+        }
+        impl Div<$time> for TimeValue {
+            type Output = Self;
+            #[inline] fn div(self, n: $time) -> Self::Output {
+                if n > INFINITE_TIME_VALUE as $time {
+                    TimeValue::default() // zero
+                } else {
+                    TimeValue::from_ticks(self.0.saturating_div(n as i64))
+                }
+            }
+        }
+    };
+}
+timevalscalingubig!(u64);
+timevalscalingubig!(u128);
+timevalscalingubig!(usize);
+
 
 macro_rules! timescalingassign {
     ($time:ty, $scale:ty) => {
