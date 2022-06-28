@@ -3,6 +3,7 @@ use std::iter::{Once, once};
 use std::ops::{Add, Neg, Sub};
 use crate::error::TimeError;
 use super::*;
+use crate::*;
 
 /// # An alias for [`TimeInterval<TimeValue>`]
 ///
@@ -115,6 +116,22 @@ impl<T:TimePoint> TimeInterval<T>
 }
 
 impl<T:TimePoint> TimeConvex for TimeInterval<T> {}
+
+impl<T:TimePoint+TimeTranslation> TimeTranslation for TimeInterval<T>
+{
+    fn translate(&self, t: TimeValue) -> TimeResult<Self>
+    {
+        let lower = self.lower.translate(t)?;
+        let upper = self.upper.translate(t)?;
+        if lower.is_future_infinite() {
+            Err(TimeError::FutureOverflow)
+        } else if upper.is_past_infinite() {
+            Err(TimeError::PastOverflow)
+        } else {
+            Ok(Self{ lower, upper })
+        }
+    }
+}
 
 impl<T:TimePoint> From<T> for TimeInterval<T> {
     #[inline]

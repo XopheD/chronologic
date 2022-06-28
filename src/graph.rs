@@ -1,5 +1,5 @@
 use super::*;
-use std::cmp::{min,max};
+use std::cmp::{min, max, Ordering};
 use embed_doc_image::embed_doc_image;
 
 /// # A graph of non disjunctive time constraints.
@@ -59,8 +59,8 @@ use embed_doc_image::embed_doc_image;
 /// ![TimeGraph][timegraph-3]
 ///
 /// ## References
-/// 1. C. Dousson. _"Suivi d'évolutions et reconnaissance de chroniques."_
-///    Thèse d'informatique, option I.A., Université Paul Sabatier, Toulouse (1994)
+/// 1. C. Dousson. _"Evolution Monitoring and Chronicle Recognition."_
+///    PhD thesis (in french), computer sciences, A.I., Université Paul Sabatier, Toulouse (1994)
 /// 1. U. Montanari. _"Networks of constraints: fundamental properties and applications to picture
 ///      processing"_, Information sciences 7, 1974, pp 95-132.
 /// 1. C.H. Papadimitriou and K. Steiglitz. _"Combinatorial optimization: algorithms and complexity."_
@@ -76,12 +76,98 @@ pub struct TimeGraph {
     data : Vec<TimeValue>
 }
 
-#[derive(Clone,Default,Eq,PartialEq)]
-pub struct TimeConstraint {
-    pub start: u32,
-    pub end: u32,
-    pub constraint: TimeSpan
+pub struct TimeConstraint<'a> {
+    start: u32,
+    end: u32,
+    constraint: &'a mut TimeGraph
 }
+
+/// Result of a propagation operation inside
+/// a time constraint graph (or an agenda).
+#[derive(Debug)]
+pub enum TimePropagation<X> {
+
+    /// The propagation is done without modifying the initial data
+    ///
+    /// Typically, it is the case when we attempt to add a new time
+    /// constraint which is always ensured by the previous ones.
+    Unchanged(X),
+
+    /// The propagation is done and modifies the initial data
+    Propagated(X),
+
+    /// The propagation failed but the original data are restored
+    Recovered(X),
+
+    /// The propagation failed and the original data are lost
+    Fatal
+}
+
+impl<X> TimePropagation<X>
+{
+    #[inline]
+    pub fn if_propagated<F: FnMut(X) -> TimePropagation<X>>(self, mut f: F) -> TimePropagation<X>
+    {
+        match self {
+            TimePropagation::Propagated(x) => match (f)(x) {
+                TimePropagation::Unchanged(x) => TimePropagation::Propagated(x),
+                other => other
+            }
+            other => other
+        }
+    }
+
+    #[inline]
+    pub fn if_unchanged<F: FnMut(X) -> TimePropagation<X>>(self, mut f: F) -> TimePropagation<X>
+    {
+        match self {
+            TimePropagation::Unchanged(x) => (f)(x),
+            other => other
+        }
+    }
+
+    #[inline]
+    pub fn and_then<F: FnMut(X) -> TimePropagation<X>>(self, mut f: F) -> TimePropagation<X>
+    {
+        match self {
+            TimePropagation::Propagated(x) => match (f)(x) {
+                TimePropagation::Unchanged(x) => TimePropagation::Propagated(x),
+                other => other
+            }
+            TimePropagation::Unchanged(x) => (f)(x),
+            other => other
+        }
+    }
+
+
+    #[inline]
+    pub fn unwrap(self) -> X {
+        match self {
+            TimePropagation::Propagated(x) | TimePropagation::Unchanged(x) => x,
+            _ => panic!("can’t unwrap time graph")
+        }
+    }
+
+    #[inline]
+    pub fn unwrap_recovered(self) -> Option<X>
+    {
+        match self {
+            TimePropagation::Recovered(x) => Some(x),
+            TimePropagation::Fatal => None,
+            _ => panic!("time graph not failed (so can’t access recovered one)")
+        }
+    }
+
+
+    #[inline]
+    pub(crate)  fn check_consistency(self) -> Self {
+        match self {
+            TimePropagation::Unchanged(_) | TimePropagation::Propagated(_) => self,
+            TimePropagation::Recovered(_) | TimePropagation::Fatal => unreachable!("consistency violation")
+        }
+    }
+}
+
 
 impl TimeGraph {
     
@@ -108,7 +194,7 @@ impl TimeGraph {
     }
     
     #[inline]
-    pub fn upper_constraint(&self, i:u32, j:u32) -> TimeValue 
+    pub fn upper_constraint(&self, i:u32, j:u32) -> TimeValue
     {
         - self.lower_constraint(j, i)
     }
@@ -121,23 +207,83 @@ impl TimeGraph {
             upper: self.upper_constraint(i, j)
         }
     }
-    
-    fn get_mut(&mut self, i:u32, j:u32) -> &mut TimeValue 
-    {
-        &mut (self.data[(i*self.size+j) as usize])
-    }
-    
-    /// Checks if two instants are simultaneous.
+
     #[inline]
-    pub fn are_simultaneous(&self, i:u32, j:u32) -> bool
+    pub unsafe fn lower_constraint_unchecked(&self, i:u32, j:u32) -> TimeValue
     {
-        self.lower_constraint(i,j).is_zero() && self.lower_constraint(j,i).is_zero()
+        *self.data.get_unchecked((i*self.size+j) as usize)
     }
 
     #[inline]
-    pub fn are_ordered(&self, i:u32, j:u32) -> bool
+    pub unsafe fn upper_constraint_unchecked(&self, i:u32, j:u32) -> TimeValue
     {
-        self.lower_constraint(i,j).is_positive()
+        - self.lower_constraint_unchecked(j, i)
+    }
+
+    #[inline]
+    pub unsafe fn constraint_unchecked(&self, i:u32, j:u32) -> TimeSpan
+    {
+        TimeSpan {
+            lower: self.lower_constraint_unchecked(i, j),
+            upper: self.upper_constraint_unchecked(i, j)
+        }
+    }
+
+    pub fn constraints_iter<'a>(&'a self, i:u32) -> impl 'a + Iterator<Item=TimeSpan> + ExactSizeIterator + FusedIterator
+    {
+        struct Iter<'a>{lower:usize,upper:usize,size:usize,graph:&'a [TimeValue]}
+        impl Iterator for Iter<'_> {
+            type Item = TimeSpan;
+            fn next(&mut self) -> Option<Self::Item> {
+                if self.upper >= self.graph.len() {
+                    None
+                } else {
+                    debug_assert!( self.lower < self.graph.len());
+                    debug_assert!( self.upper < self.graph.len());
+                    let tw = TimeSpan {
+                        lower: unsafe { *self.graph.get_unchecked(self.lower)},
+                        upper: - unsafe { *self.graph.get_unchecked(self.upper)},
+                    };
+                    self.lower += 1;
+                    self.upper += self.size;
+                    Some(tw)
+                }
+            }
+            #[inline] fn size_hint(&self) -> (usize, Option<usize>) {
+                let len = self.len(); (len,Some(len))
+            }
+        }
+        impl ExactSizeIterator for Iter<'_> {
+            #[inline] fn len(&self) -> usize { self.size - self.lower % self.size }
+        }
+        impl FusedIterator for Iter<'_> {}
+
+        Iter {
+            size: self.size as usize, // the number of instants in the time graph
+            graph: self.data.as_slice(), //  the time constraint matrix (flattened)
+            lower: (i*self.size) as usize, // the row `i` contains the lower bound
+            upper: i as usize, // the column `i` contains the opposite of the upper bound
+        }
+    }
+
+    #[inline]
+    pub fn time_cmp(&self, i:u32, j:u32) -> Option<Ordering>
+    {
+        let ij = self.lower_constraint(i,j);
+        if ij.is_strictly_positive() {
+            Some(Ordering::Less)
+        } else {
+            let ji = self.lower_constraint(j,i);
+            if ij.is_strictly_positive() {
+                Some(Ordering::Greater)
+            } else {
+                if ij.is_zero() && ji.is_zero() {
+                    Some(Ordering::Equal)
+                } else {
+                    None
+                }
+            }
+        }
     }
     
     /// Resize the graph
@@ -171,8 +317,12 @@ impl TimeGraph {
             false
         }
     }
+
+
     
-    pub fn add_time_constraint(&mut self, i:u32, j:u32, k: &TimeSpan) -> Result<bool,()>
+    pub fn add_time_constraint<TW>(mut self, (i,j):(u32,u32), k: TW) -> TimePropagation<Self>
+        where
+            TW:TimeConvex+TimeWindow<TimePoint=TimeValue>
     {
         if self.size <= max(i,j) {
             // si i ou j n'était pas dans le graphe
@@ -180,7 +330,7 @@ impl TimeGraph {
             self.resize(max(i,j)+1);
             *self.get_mut(i,j) = k.lower_bound();
             *self.get_mut(j,i) = -k.upper_bound();
-            Ok(true)
+            TimePropagation::Propagated(self)
         } else {
             let lower = self.lower_constraint(i,j);
             if k.lower_bound() <= lower {
@@ -188,22 +338,22 @@ impl TimeGraph {
                 let upper = -self.lower_constraint(j,i);
                 if k.upper_bound() >= upper {
                     //- la contrainte sup. ne change pas non plus
-                    Ok(false)
+                    TimePropagation::Unchanged(self)
                 } else if k.upper_bound() < lower {
                     //- la contrainte sup est inconsistante
-                    Err(())
+                    TimePropagation::Recovered(self)
                 } else {
                     //- OK, on propage la contrainte sup (et c'est tout)
                     *self.get_mut(j,i) = -k.upper_bound();
                     self.propagate_lower_bound(j,i);
-                    Ok(true)
+                    TimePropagation::Propagated(self)
                 }
             } else {
                 //- la contrainte basse change
                 let upper = -self.lower_constraint(j,i);
                 if (k.lower_bound() > upper) || (k.lower_bound() < lower) {
                     //- la contrainte est inconsistante
-                    Err(())
+                    TimePropagation::Recovered(self)
                 } else {
                     //- OK, on peut propager la borne inf
                     *self.get_mut(i,j) = k.lower_bound();
@@ -213,7 +363,7 @@ impl TimeGraph {
                         *self.get_mut(j,i) = -k.upper_bound();
                         self.propagate_lower_bound(j,i);
                     }
-                    Ok(true)
+                    TimePropagation::Propagated(self)
                 }
             }
         }
@@ -227,35 +377,53 @@ impl TimeGraph {
     /// If the new constraint is consistent, then it will be propagated.
     /// true is returned if something change and false is returned if
     /// nothing changed (i.e. if the constraint was already deduced the graph)
-    pub fn add_lower_time_constraint(&mut self, i:u32, j:u32, lower:TimeValue) -> Result<bool,()>
+    pub fn add_lower_time_constraint(mut self, i:u32, j:u32, lower:TimeValue) -> TimePropagation<Self>
     {
         if self.size <= max(i,j) {
             self.resize(max(i,j)+1);
             *self.get_mut(i,j) = lower;
-            Ok(true)
+            TimePropagation::Propagated(self)
         } else {
             if lower <= self.lower_constraint(i,j) {
                 //- la contrainte basse ne change pas
-                Ok(false)
+                TimePropagation::Unchanged(self)
             } else if lower > -self.lower_constraint(j,i) {
                 //- la contrainte sup est inconsistante
-                Err(())
+                TimePropagation::Recovered(self)
             } else {
                 //- OK, on peut propager la borne inf
                 *self.get_mut(i,j) = lower;
                 self.propagate_lower_bound(j,i);
-                Ok(true)
+                TimePropagation::Propagated(self)
             }
         }
     }
     
     #[inline]
-    pub fn add_upper_time_constraint(&mut self, i:u32, j:u32, k:TimeValue) -> Result<bool,()>
-    {
+    pub fn add_upper_time_constraint(self, i:u32, j:u32, k:TimeValue) -> TimePropagation<Self> {
         self.add_lower_time_constraint(j, i, -k)
     }
-    
-    fn propagate_lower_bound(&mut self, io:u32, jo:u32) 
+
+    #[inline]
+    fn get_mut(&mut self, i:u32, j:u32) -> &mut TimeValue
+    {
+        &mut (self.data[(i*self.size+j) as usize])
+    }
+
+    #[inline]
+    unsafe fn get_unchecked(&self, i:u32, j:u32) -> &TimeValue
+    {
+        self.data.get_unchecked((i*self.size+j) as usize)
+    }
+
+    #[inline]
+    unsafe fn get_unchecked_mut(&mut self, i:u32, j:u32) -> &mut TimeValue
+    {
+        self.data.get_unchecked_mut((i*self.size+j) as usize)
+    }
+
+
+    fn propagate_lower_bound(&mut self, io:u32, jo:u32)
     {
         //- propagation incrementale
         //- on suppose que la table des contraintes est a jour
@@ -271,9 +439,11 @@ impl TimeGraph {
         //- boucle autour du noeud io
         // C(i,jo) <- max (C(i,jo), (C(i,io) + C(io,jo)))
         for i in 0..self.size {
-            let val: TimeValue = self.lower_constraint(i, io)+self.lower_constraint(io, jo);
-            if val > self.lower_constraint(i, jo) {
-                *self.get_mut(i, jo) = val;
+            let val: TimeValue = unsafe {
+                self.lower_constraint_unchecked(i, io) + self.lower_constraint_unchecked(io, jo)
+            };
+            if val > unsafe { self.lower_constraint_unchecked(i, jo) } {
+                unsafe { *self.get_unchecked_mut(i, jo) = val; }
             }
         }
         
@@ -281,32 +451,93 @@ impl TimeGraph {
         //- C(j,i) <- C(j,i) & (C(j,jo) + C(jo,i))
         for j in 0..self.size {
             for i in 0..self.size {
-                let val: TimeValue = self.lower_constraint(j, jo)+self.lower_constraint(jo, i);
-                if val > self.lower_constraint(j, i) {
-                    *self.get_mut(j, i) = val;
+                let val: TimeValue = unsafe {
+                    self.lower_constraint_unchecked(j, jo)+self.lower_constraint_unchecked(jo, i)
+                };
+                if val > unsafe { self.lower_constraint_unchecked(j, i) } {
+                    unsafe { *self.get_unchecked_mut(j, i) = val; }
                 }
             }
         }
     }
-    
-    /*
-    /// Global propagation in O(n<sup>3</sup>).
-    ///
-    /// All the graph constraints are propagated.
-    pub fn propagateLowerBounds(&mut self) -> Result<bool>
+
+    pub fn merge(mut self, rhs: TimeGraph) -> TimePropagation<Self>
     {
-        for (int k = 0; k < size(); ++k) {
-            for (int i = 0; i < size(); ++i) {
-                for (int j = 0; j < size(); ++j) {
-                    matrix.setMax(i, j, TimeValue.add(matrix.get(i,k), matrix.get(k,j)));
-                }
-                if (matrix.get(i,i) > 0) {
-                    throw new TimeInconsistencyException();
+        if self.size < rhs.size {
+            return rhs.merge(self)
+        }
+        let mut stgchanged = false;
+        if self.size == rhs.size {
+            // the two graphs have the same size so the bounds
+            // are in the same place in the flattened matrix
+            self.data.iter_mut()
+                .zip(rhs.data.iter())
+                .for_each(|(a,b)| if *a < *b { *a = *b; stgchanged = true; })
+        } else {
+            for i in 0..rhs.size {
+                for j in 0..rhs.size {
+                    let a = unsafe { self.get_unchecked_mut(i,j) };
+                    let b = unsafe { rhs.get_unchecked(i,j) };
+                    if *a < *b { *a = *b; stgchanged = true; }
                 }
             }
         }
-        
-    }*/
+        if stgchanged {
+            self.propagate().if_unchanged(|g| Propagated(g))
+        } else {
+            TimePropagation::Unchanged(self)
+        }
+    }
+
+    pub fn add_time_constraints<TW,I>(mut self, iter:I) -> TimePropagation<Self>
+        where
+            TW:TimeConvex+TimeWindow<TimePoint=TimeValue>,
+            I:IntoIterator<Item=((u32,u32),TW)>
+    {
+        iter.into_iter()
+            .for_each(|((i,j), tw)| {
+                let lower = self.get_mut(i,j);
+                if *lower < tw.lower_bound() {
+                    *lower = tw.lower_bound();
+                }
+
+                // SAFETY: if lower exists, the upper does...
+                let upper = unsafe{self.get_unchecked_mut(j,i)};
+                if *upper < -tw.upper_bound() {
+                    *upper = -tw.upper_bound();
+                }
+            });
+        self.propagate()
+    }
+
+    /// Global propagation in O(n<sup>3</sup>).
+    ///
+    /// All the graph constraints are propagated.
+    fn propagate(mut self) -> TimePropagation<Self>
+    {
+        let mut stgchanged = false;
+        for k in 0..self.size {
+            for i in 0..self.size {
+                for j in 0..self.size {
+                    let val: TimeValue = unsafe {
+                        self.lower_constraint_unchecked(i, k)+self.lower_constraint_unchecked(k, j)
+                    };
+                    if val > unsafe { self.lower_constraint_unchecked(i, j) } {
+                        unsafe { *self.get_unchecked_mut(i, j) = val; }
+                        stgchanged = true;
+                    }
+                }
+                if unsafe { self.lower_constraint_unchecked(i,i) }.is_strictly_positive() {
+                    return TimePropagation::Fatal
+                }
+            }
+        }
+        if stgchanged {
+            TimePropagation::Propagated(self)
+        } else {
+            TimePropagation::Unchanged(self)
+        }
+    }
 }
 
 /*
@@ -334,6 +565,8 @@ impl FromIterator<TimeConstraint> for TimeGraph
 
 
 use std::fmt;
+use std::iter::FusedIterator;
+use crate::TimePropagation::Propagated;
 
 impl fmt::Display for TimeGraph
 {
@@ -380,12 +613,23 @@ pub mod tests {
     use crate::graph::TimeGraph;
 
     #[test]
-    fn propagation() -> Result<(),()>
+    fn propagation() -> Result<(),Option<TimeGraph>>
     {
-        let mut graph = TimeGraph::with_size(3);
-        graph.add_time_constraint(0, 1, &TimeInterval::new(TimeValue::from_ticks(0), TimeValue::from_ticks(5)).unwrap())?;
-        graph.add_time_constraint(1, 2, &TimeInterval::new(TimeValue::from_ticks(7), TimeValue::from_ticks(10)).unwrap())?;
-        graph.add_time_constraint(0, 2, &TimeInterval::new(TimeValue::from_ticks(10), TimeValue::from_ticks(25)).unwrap())?;
+        let g = TimeGraph::with_size(3)
+            .add_time_constraint((0,1), TimeValue::from_ticks(0)..= TimeValue::from_ticks(5))
+            .and_then(|graph | graph.add_time_constraint((1,2), TimeValue::from_ticks(7)..= TimeValue::from_ticks(10)))
+            .and_then(|graph| graph.add_time_constraint((0,2), TimeValue::from_ticks(10)..=TimeValue::from_ticks(25)))
+            .unwrap();
+
+        dbg!(&g);
+
+        let g = TimeGraph::with_size(3)
+            .add_time_constraints(vec![
+                ((0,1), TimeValue::from_ticks(0)..= TimeValue::from_ticks(5)),
+                ((1,2), TimeValue::from_ticks(1)..= TimeValue::from_ticks(6)),
+                ((0,2), TimeValue::from_ticks(10)..=TimeValue::from_ticks(25)),
+        ]);
+        dbg!(g);
         Ok(())
     }
 }

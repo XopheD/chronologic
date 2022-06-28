@@ -1,36 +1,23 @@
 use std::ops::*;
 use crate::*;
 
-//---------------------- TIMEVALUE OUTPUT ----------------------
 
-impl Add for TimeValue
-{
-    type Output = Self;
-
-    fn add(self, other: Self) -> Self::Output
-    {
-        if self.is_future_infinite() {
-            if other.is_past_infinite() {
-                panic!("can't add infinite time values +oo + -oo");
-            }
-            self
-        } else if self.is_past_infinite() {
-            if other.is_future_infinite() {
-                panic!("can't add infinite time values -oo + +oo");
-            }
-            self
-        } else if other.is_finite() {
-            Self::from_ticks(self.0.saturating_add(other.0))
-        } else {
-            other
-        }
-    }
+/// # A trait for time translation of time window
+pub trait TimeTranslation {
+    /// Translate the time window
+    fn translate(&self, t: TimeValue) -> TimeResult<Self>
+        where Self: Sized;
 }
 
-impl AddAssign for TimeValue
-{
-    #[inline]
-    fn add_assign(&mut self, other: TimeValue) { *self = *self + other; }
+//---------------------- TIMEVALUE OUTPUT ----------------------
+
+impl Add for TimeValue {
+    type Output = Self;
+    #[inline] fn add(self, other: Self) -> Self { self.translate(other).unwrap() }
+}
+
+impl AddAssign for TimeValue {
+    #[inline] fn add_assign(&mut self, other: TimeValue) { *self = *self + other; }
 }
 
 impl Sub for TimeValue {
@@ -197,7 +184,6 @@ impl Sub<TimeSpan> for Timestamp {
     }
 }
 
-
 impl Add<Timestamp> for TimeSpan {
     type Output = TimeSlot;
     #[inline]
@@ -246,26 +232,26 @@ impl Sub<TimeSlot> for Timestamp {
 //------------------------ TIMESET<T> OUTPUT ------------------------
 
 impl<T:TimePoint> Add<TimeValue> for TimeSet<T>
-    where TimeInterval<T>: AddAssign<TimeValue>
+    where TimeInterval<T>: Add<TimeValue,Output=TimeInterval<T>>
 {
     type Output = Self;
     #[inline]
     fn add(self, other: TimeValue) -> Self::Output {
-        let mut result = self.clone();
-        result += other;
-        result
+        // adding a constant preserves the structure (order and distance
+        // between successive intervals -> no new overlapping to manage)
+        Self(self.0.iter().map(|tw| *tw + other).collect())
     }
 }
 
 impl<T:TimePoint> Sub<TimeValue> for TimeSet<T>
-    where TimeInterval<T>: SubAssign<TimeValue>
+    where TimeInterval<T>: Sub<TimeValue,Output=TimeInterval<T>>
 {
     type Output = Self;
     #[inline]
     fn sub(self, other: TimeValue) -> Self::Output {
-        let mut result = self.clone();
-        result -= other;
-        result
+        // adding a constant preserves the structure (order and distance
+        // between successive intervals -> no new overlapping to manage)
+        Self(self.0.iter().map(|tw| *tw - other).collect())
     }
 }
 
@@ -296,9 +282,9 @@ impl Add<Timestamp> for TimeSpans
     type Output = TimeSlots;
     #[inline]
     fn add(self, other: Timestamp) -> Self::Output {
-        self.0.iter()
-            .map(|i| *i + other)
-            .collect()
+        // adding a constant preserves the structure (order and distance
+        // between successive intervals -> no new overlapping to manage)
+        TimeSet(self.0.iter().map(|tw| *tw + other).collect())
     }
 }
 
@@ -307,12 +293,11 @@ impl Sub<Timestamp> for TimeSpans
     type Output = TimeSlots;
     #[inline]
     fn sub(self, other: Timestamp) -> Self::Output {
-        self.0.iter()
-            .map(|i| *i - other)
-            .collect()
+        // adding a constant preserves the structure (order and distance
+        // between successive intervals -> no new overlapping to manage)
+        TimeSet(self.0.iter().map(|tw| *tw - other).collect())
     }
 }
-
 
 impl Add<TimeSpans> for Timestamp
 {
@@ -326,9 +311,12 @@ impl Sub<TimeSpans> for Timestamp
     type Output = TimeSlots;
     #[inline]
     fn sub(self, other: TimeSpans) -> Self::Output {
-        other.0.iter()
-            .map(|i| self - *i)
-            .collect()
+        // adding a constant preserves the structure (order and distance
+        // between successive intervals -> no new overlapping to manage)
+        // but as we subtracts the intervals, the list should be reversed
+        TimeSet(other.into_iter().rev()
+            .map(|i| self - i)
+            .collect())
     }
 }
 

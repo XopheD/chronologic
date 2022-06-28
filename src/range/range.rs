@@ -16,6 +16,26 @@ impl<T:TimePoint> TimeWindow for Range<T>
 
 impl<T:TimePoint> TimeConvex for Range<T> {}
 
+impl<T:TimePoint+TimeTranslation> TimeTranslation for Range<T>
+{
+    fn translate(&self, t: TimeValue) -> TimeResult<Self>
+    {
+        if self.is_empty() {
+            Err(TimeError::EmptyInterval)
+        } else {
+            let start = self.start.translate(t)?;
+            let end = self.end.translate(t)?;
+            if start.is_future_infinite() {
+                Err(TimeError::FutureOverflow)
+            } else if end.is_past_infinite() {
+                Err(TimeError::PastOverflow)
+            } else {
+                Ok(start..end)
+            }
+        }
+    }
+}
+
 impl<T:TimePoint> From<Range<T>> for TimeInterval<T>
 {
     #[inline]

@@ -2,8 +2,10 @@ use std::ops::Neg;
 use std::time;
 use std::fmt;
 use chrono::Duration;
+use crate::TimeError;
 
 use super::*;
+
 
 /// # A single time value (duration)
 ///
@@ -133,6 +135,7 @@ impl TimeValue {
             }
         )
     }
+
 }
 
 impl TimePoint for TimeValue
@@ -266,6 +269,8 @@ impl fmt::Display for TimeValue
     }
 }
 
+impl<T:TimePoint> TimeConvex for T { }
+
 impl<T:TimePoint> TimeWindow for T
 {
     type TimePoint = Self;
@@ -285,5 +290,30 @@ impl<T:TimePoint> TimeWindow for T
     fn lower_bound(&self) -> Self::TimePoint { *self }
     #[inline]
     fn upper_bound(&self) -> Self::TimePoint { *self }
+}
+
+
+impl TimeTranslation for TimeValue
+{
+    fn translate(&self, other: TimeValue) -> TimeResult<Self>
+    {
+        if self.is_future_infinite() {
+            if other.is_past_infinite() {
+                Err(TimeError::UndefinedValue)
+            } else {
+                Ok(*self)
+            }
+        } else if self.is_past_infinite() {
+            if other.is_future_infinite() {
+                Err(TimeError::UndefinedValue)
+            } else {
+                Ok(*self)
+            }
+        } else if other.is_finite() {
+            Ok(Self::from_ticks(self.0.saturating_add(other.0)))
+        } else {
+            Ok(other)
+        }
+    }
 }
 

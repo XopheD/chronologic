@@ -3,11 +3,17 @@ use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
 use std::fmt;
 use std::time::SystemTime;
 
-use super::*;
+use crate::*;
 
-/// # A UTC timestamp
+/// # A UTC timestamp (date + time)
 #[derive(Copy, Clone, Default, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Timestamp(pub(crate) TimeValue);
+
+/// A trait for marking timestamped data
+pub trait Timestamped {
+    /// Gets the timestamp
+    fn timestamp(&self) -> Timestamp;
+}
 
 impl fmt::Debug for Timestamp
 {
@@ -92,6 +98,21 @@ impl TimePoint for Timestamp
     #[inline] fn just_before(&self) -> Self { Self(self.0.just_before()) }
 }
 
+
+impl Timestamped for Timestamp
+{
+    #[inline]
+    fn timestamp(&self) -> Timestamp { *self }
+}
+
+impl TimeTranslation for Timestamp
+{
+    #[inline]
+    fn translate(&self, t: TimeValue) -> TimeResult<Self> {
+        self.0.translate(t).map(|t| Self(t))
+    }
+}
+
 impl Into<NaiveDateTime> for Timestamp
 {
     #[inline]
@@ -115,3 +136,4 @@ impl<Tz:TimeZone> From<DateTime<Tz>> for Timestamp
         Self(TimeValue::from_nanos(t.timestamp_nanos()))
     }
 }
+

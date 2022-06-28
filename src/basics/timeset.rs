@@ -22,10 +22,15 @@ pub struct TimeSet<T:TimePoint>(pub(crate) Vec<TimeInterval<T>>);
 
 impl<T:TimePoint> TimeSet<T>
 {
-    /// Returns the full interval `]-oo,+oo[`
+    /// The full interval `]-oo,+oo[`
+    ///
+    /// Returns a timeset composed of the full interval `]-oo,+oo[`
     #[inline]
     pub fn all() -> Self { Self(vec![TimeInterval::all()]) }
 
+    /// A convex interval `[a,b]`
+    ///
+    /// Returns a timeset composed of one convex interval.
     #[inline]
     pub fn convex(lower: T, upper: T) -> Result<Self,TimeError>
     {
@@ -36,16 +41,26 @@ impl<T:TimePoint> TimeSet<T>
         }
     }
 
+    /// A singleton `{t}`
+    ///
+    /// Retuns a timeset composed of the convex interval `[t,t]`
     #[inline]
     pub fn singleton(t: T) -> Result<Self,TimeError> {
         TimeInterval::singleton(t).map(|tw| Self(vec![tw]))
     }
 
+    /// The empty set
     #[inline]
     pub fn empty() -> Self { Self(vec![]) }
 
+    /// Inner intervals ordered access
+    ///
+    /// This method gives an access to the inner intervals describing this set.
+    /// The intervals are all distints, without any overlapping nor meeting
+    /// (i.e. each pair of intervals are separated by, at least, one time point).
     #[inline]
     pub fn as_slice(&self) -> &[TimeInterval<T>] { self.0.as_slice() }
+
 }
 
 
@@ -87,6 +102,19 @@ impl<T:TimePoint> TimeWindow for TimeSet<T>
     #[inline]
     fn upper_bound(&self) -> Self::TimePoint {
         self.0.last().expect("empty interval").upper_bound()
+    }
+}
+
+impl<T:TimePoint+TimeTranslation> TimeTranslation for TimeSet<T>
+{
+    fn translate(&self, t: TimeValue) -> TimeResult<Self>
+    {
+        // adding a constant preserves the structure (order and distance
+        // between successive intervals -> nothing to manage)
+        self.0.iter()
+            .map(|i| i.translate(t))
+            .collect::<TimeResult<Vec<_>>>()
+            .map(|v| Self(v))
     }
 }
 

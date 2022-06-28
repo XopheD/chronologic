@@ -13,6 +13,9 @@ pub use timevalue::*;
 pub use timestamp::*;
 pub use timeinterval::*;
 pub use timeset::*;
+pub use translation::*;
+
+use crate::TimeResult;
 
 // Inner value to represent infinite
 const INFINITE_TIME_VALUE : i64 = i64::MAX;
@@ -30,7 +33,7 @@ const MAX_SEC: i64 = i64::MAX >> SUBSEC_BITLEN;
 
 
 /// # A duration value or a timestamp
-pub trait TimePoint : Clone+Copy+Eq+Ord+Neg<Output=Self> {
+pub trait TimePoint : Clone+Copy+Eq+Ord+Neg<Output=Self>+TimeConvex<TimePoint=Self> {
 
     /// The infinite time point (&infin;)
     const INFINITE: Self;
@@ -51,11 +54,13 @@ pub trait TimePoint : Clone+Copy+Eq+Ord+Neg<Output=Self> {
     fn just_before(&self) -> Self;
 }
 
-/// # A set of timepoint
+/// # A set of timepoints
 pub trait TimeWindow {
-    /// The type of the bounds.
+    /// The type of the time bounds.
     ///
     /// This is also the type of the element managed by this time window.
+    /// Typically, the timepoint is [`Timestamp`] when dealing with dates and
+    /// [`TimeValue`]  when dealing with durations.
     type TimePoint: TimePoint;
 
     /// Checks if this time window is empty
@@ -94,24 +99,20 @@ pub trait TimeWindow {
     ///
     /// It panics if this time window is empty
     fn upper_bound(&self) -> Self::TimePoint;
-
 }
 
-
-/// A convex (interval) time set
+/// # A trait for convex (interval) time set
+///
+/// If a time window implements this trait, it is sure
+/// that it is a time interval (bounded or not) or an empty set.
+/// So some computations could be optimized.
 pub trait TimeConvex: TimeWindow {
-
-    /// Checks if two convex intersect
-    #[inline]
-    fn intersects<TW:TimeConvex+TimeWindow<TimePoint=Self::TimePoint>>(&self, tw: &TW) -> bool {
-        self.lower_bound() <= tw.upper_bound() && self.upper_bound() >= tw.lower_bound()
-    }
 
     /// Compute intersection
     ///
     /// Returns `None` if intersection is empty
     #[inline]
-    fn intersection<TW:TimeConvex+TimeWindow<TimePoint=Self::TimePoint>>(&self, tw: &TW) -> Option<TimeInterval<Self::TimePoint>> {
+    fn intersection<TW:TimeConvex<TimePoint=Self::TimePoint>>(&self, tw: &TW) -> Option<TimeInterval<Self::TimePoint>> {
         let lower = self.lower_bound().max(tw.lower_bound());
         let upper = self.upper_bound().min(tw.upper_bound());
         if lower > upper { None } else { Some(TimeInterval { lower, upper }) }
@@ -121,7 +122,7 @@ pub trait TimeConvex: TimeWindow {
     ///
     /// Never fail
     #[inline]
-    fn convex_union<TW:TimeConvex+TimeWindow<TimePoint=Self::TimePoint>>(&self, tw: &TW) -> TimeInterval<Self::TimePoint> {
+    fn convex_union<TW:TimeConvex<TimePoint=Self::TimePoint>>(&self, tw: &TW) -> TimeInterval<Self::TimePoint> {
         TimeInterval {
             lower: self.lower_bound().min(tw.lower_bound()),
             upper: self.upper_bound().max(tw.upper_bound())
