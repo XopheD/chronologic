@@ -42,38 +42,46 @@ impl Agenda<'_> {
     }
 
     /// Ensure that all the agenda will end at or before the deadline
-    pub fn with_deadline(self, deadline: Timestamp) -> TimePropagation<Self>
+    pub fn set_deadline(&mut self, deadline: Timestamp) -> TimePropagation
     {
         // first, check if this deadline is compatible
         if self.agenda.iter().any(|tw| tw.lower_bound() > deadline) {
-            TimePropagation::Recovered(self)
+            TimePropagation::Recovered
         } else {
             // we know that the propagation will succeed
             (0..self.agenda.len() as u32)
-                .fold(TimePropagation::Unchanged(self),
-                      |a, i| a.and_then(|a| a.restrict(i, ..=deadline))
-                ).check_consistency()
+                .fold(TimePropagation::Unchanged,
+                      |result, i|
+                          match self.restrict(i, ..=deadline) {
+                              TimePropagation::Unchanged => result,
+                              TimePropagation::Propagated => TimePropagation::Propagated,
+                              _ => unreachable!()
+                          })
         }
     }
 
     /// Ensure that all the agenda will start at or after the startline
-    pub fn with_startline(self, startline: Timestamp) -> TimePropagation<Self>
+    pub fn set_startline(&mut self, startline: Timestamp) -> TimePropagation
     {
         // first, check if this startline is compatible
         if self.agenda.iter().any(|tw| tw.upper_bound() < startline) {
-            TimePropagation::Recovered(self)
+            TimePropagation::Recovered
         } else {
             // we know that the propagation will succeed
             (0..self.agenda.len() as u32)
-                .fold(TimePropagation::Unchanged(self),
-                      |a, i| a.and_then(|a| a.restrict(i, startline..))
-                ).check_consistency()
+                .fold(TimePropagation::Unchanged,
+                      |result, i|
+                          match self.restrict(i, startline..) {
+                              TimePropagation::Unchanged => result,
+                              TimePropagation::Propagated => TimePropagation::Propagated,
+                              _ => unreachable!()
+                          })
         }
     }
 
 
     /// Add a new constraint on one agenda entry
-    pub fn restrict<TW>(mut self, i: u32, tw: TW) -> TimePropagation<Self>
+    pub fn restrict<TW>(&mut self, i: u32, tw: TW) -> TimePropagation
         where TW:TimeWindow<TimePoint=Timestamp>+TimeConvex+Clone
     {
         // checks the index now, and use unsafe get_unchecked in the fn body
@@ -81,18 +89,18 @@ impl Agenda<'_> {
 
         let reduced = self.agenda[i as usize].clone() & tw.clone();
         if reduced.is_empty() {
-            TimePropagation::Recovered(self)
+            TimePropagation::Recovered
         } else if reduced.eq(unsafe { self.agenda.get_unchecked(i as usize) }) {
-            TimePropagation::Unchanged(self)
+            TimePropagation::Unchanged
         } else {
             let t = self.agenda.get(i as usize).unwrap();
             if tw.contains(t) {
-                TimePropagation::Unchanged(self)
+                TimePropagation::Unchanged
             } else {
                 self.agenda.iter_mut()
                     .zip(self.constraints.constraints_iter(i))
                     .for_each(|(t, k)| { *t &= reduced.clone() + k; });
-                TimePropagation::Propagated(self)
+                TimePropagation::Propagated
             }
         }
     }
@@ -122,15 +130,14 @@ pub mod tests {
     #[test]
     fn propagation() -> Result<(),Option<TimeGraph>>
     {
-        let graph = TimeGraph::with_size(3)
-            .add_time_constraint((0,1), TimeValue::from_ticks(0) ..= TimeValue::from_ticks(5))
-            .and_then(|g| g.add_time_constraint((1,2), TimeValue::from_ticks(7) ..= TimeValue::from_ticks(10)))
-            .and_then(|g| g.add_time_constraint((0,2), TimeValue::from_ticks(10) ..= TimeValue::from_ticks(25)))
-            .unwrap();
+        let mut g = TimeGraph::with_size(3);
+        g.add_time_constraint((0,1), TimeValue::from_ticks(0) ..= TimeValue::from_ticks(5));
+        g.add_time_constraint((1,2), TimeValue::from_ticks(7) ..= TimeValue::from_ticks(10));
+        g.add_time_constraint((0,2), TimeValue::from_ticks(10) ..= TimeValue::from_ticks(25));
 
-        let agenda = Agenda::new(&graph)
-            .with_startline(Timestamp::default()).unwrap()
-            .with_deadline(Timestamp::from_origin(TimeValue::from_ticks(100))).unwrap();
+        let mut agenda = Agenda::new(&g);
+        agenda.set_startline(Timestamp::default());
+        agenda.set_deadline(Timestamp::from_origin(TimeValue::from_ticks(100)));
 
         dbg!(agenda);
         Ok(())
