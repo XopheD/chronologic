@@ -1,7 +1,3 @@
-use super::*;
-use std::cmp::{min, max, Ordering};
-use embed_doc_image::embed_doc_image;
-
 /// # A graph of non disjunctive time constraints.
 
 /// Each node  of the graph corresponds to an instant and
@@ -84,9 +80,8 @@ pub struct TimeConstraint<'a> {
 
 /// Result of a propagation operation inside
 /// a time constraint graph (or an agenda).
-#[derive(Debug)]
+#[derive(Clone,Copy,Debug)]
 pub enum TimePropagation {
-
     /// The propagation is done without modifying the initial data
     ///
     /// Typically, it is the case when we attempt to add a new time
@@ -95,7 +90,10 @@ pub enum TimePropagation {
 
     /// The propagation is done and modifies the initial data
     Propagated,
+}
 
+#[derive(Clone,Copy,Debug)]
+pub enum TimeInconsistencyError {
     /// The propagation failed but the original data are restored
     Recovered,
 
@@ -106,19 +104,16 @@ pub enum TimePropagation {
     Fatal
 }
 
-impl TimePropagation
-{
-    #[inline]
-    pub fn is_consistent(self) -> bool
-    {
-        match self {
-            TimePropagation::Unchanged => true,
-            TimePropagation::Propagated => true,
-            TimePropagation::Recovered => false,
-            TimePropagation::Fatal => false
-        }
-    }
-}
+use std::fmt;
+use std::iter::FusedIterator;
+use super::*;
+use std::cmp::{min, max, Ordering};
+use std::error::Error;
+use embed_doc_image::embed_doc_image;
+
+
+pub type TimePropagationResult = Result<TimePropagation,TimeInconsistencyError>;
+
 
 
 impl TimeGraph {
@@ -272,7 +267,7 @@ impl TimeGraph {
 
 
     
-    pub fn add_time_constraint<TW>(&mut self, (i,j):(u32,u32), k: TW) -> TimePropagation
+    pub fn add_time_constraint<TW>(&mut self, (i,j):(u32,u32), k: TW) -> TimePropagationResult
         where
             TW:TimeConvex+TimeWindow<TimePoint=TimeValue>
     {
@@ -282,7 +277,7 @@ impl TimeGraph {
             self.resize(max(i,j)+1);
             *self.get_mut(i,j) = k.lower_bound();
             *self.get_mut(j,i) = -k.upper_bound();
-            TimePropagation::Propagated
+            Ok(TimePropagation::Propagated)
         } else {
             let lower = self.lower_constraint(i,j);
             if k.lower_bound() <= lower {
@@ -290,22 +285,22 @@ impl TimeGraph {
                 let upper = -self.lower_constraint(j,i);
                 if k.upper_bound() >= upper {
                     //- la contrainte sup. ne change pas non plus
-                    TimePropagation::Unchanged
+                    Ok(TimePropagation::Unchanged)
                 } else if k.upper_bound() < lower {
                     //- la contrainte sup est inconsistante
-                    TimePropagation::Recovered
+                    Err(TimeInconsistencyError::Recovered)
                 } else {
                     //- OK, on propage la contrainte sup (et c'est tout)
                     *self.get_mut(j,i) = -k.upper_bound();
                     self.propagate_lower_bound(j,i);
-                    TimePropagation::Propagated
+                    Ok(TimePropagation::Propagated)
                 }
             } else {
                 //- la contrainte basse change
                 let upper = -self.lower_constraint(j,i);
                 if (k.lower_bound() > upper) || (k.lower_bound() < lower) {
                     //- la contrainte est inconsistante
-                    TimePropagation::Recovered
+                    Err(TimeInconsistencyError::Recovered)
                 } else {
                     //- OK, on peut propager la borne inf
                     *self.get_mut(i,j) = k.lower_bound();
@@ -315,7 +310,7 @@ impl TimeGraph {
                         *self.get_mut(j,i) = -k.upper_bound();
                         self.propagate_lower_bound(j,i);
                     }
-                    TimePropagation::Propagated
+                    Ok(TimePropagation::Propagated)
                 }
             }
         }
@@ -329,30 +324,30 @@ impl TimeGraph {
     /// If the new constraint is consistent, then it will be propagated.
     /// true is returned if something change and false is returned if
     /// nothing changed (i.e. if the constraint was already deduced the graph)
-    pub fn add_lower_time_constraint(&mut self, i:u32, j:u32, lower:TimeValue) -> TimePropagation
+    pub fn add_lower_time_constraint(&mut self, i:u32, j:u32, lower:TimeValue) -> TimePropagationResult
     {
         if self.size <= max(i,j) {
             self.resize(max(i,j)+1);
             *self.get_mut(i,j) = lower;
-            TimePropagation::Propagated
+            Ok(TimePropagation::Propagated)
         } else {
             if lower <= self.lower_constraint(i,j) {
                 //- la contrainte basse ne change pas
-                TimePropagation::Unchanged
+                Ok(TimePropagation::Unchanged)
             } else if lower > -self.lower_constraint(j,i) {
                 //- la contrainte sup est inconsistante
-                TimePropagation::Recovered
+                Err(TimeInconsistencyError::Recovered)
             } else {
                 //- OK, on peut propager la borne inf
                 *self.get_mut(i,j) = lower;
                 self.propagate_lower_bound(j,i);
-                TimePropagation::Propagated
+                Ok(TimePropagation::Propagated)
             }
         }
     }
     
     #[inline]
-    pub fn add_upper_time_constraint(&mut self, i:u32, j:u32, k:TimeValue) -> TimePropagation {
+    pub fn add_upper_time_constraint(&mut self, i:u32, j:u32, k:TimeValue) -> TimePropagationResult {
         self.add_lower_time_constraint(j, i, -k)
     }
 
@@ -413,7 +408,7 @@ impl TimeGraph {
         }
     }
 
-    pub fn merge(&mut self, mut rhs: TimeGraph) -> TimePropagation
+    pub fn merge(&mut self, mut rhs: TimeGraph) -> TimePropagationResult
     {
         if self.size < rhs.size {
             std::mem::swap(self, &mut rhs)
@@ -435,18 +430,14 @@ impl TimeGraph {
             }
         }
         if stgchanged {
-            let propagation = self.propagate();
-            if matches!(propagation, TimePropagation::Unchanged) {
-                TimePropagation::Propagated
-            } else {
-                propagation
-            }
+            self.propagate()?;
+            Ok(TimePropagation::Propagated)
         } else {
-            TimePropagation::Unchanged
+            Ok(TimePropagation::Unchanged)
         }
     }
 
-    pub fn add_time_constraints<TW,I>(&mut self, iter:I) -> TimePropagation
+    pub fn add_time_constraints<TW,I>(&mut self, iter:I) -> TimePropagationResult
         where
             TW:TimeConvex+TimeWindow<TimePoint=TimeValue>,
             I:IntoIterator<Item=((u32,u32),TW)>
@@ -470,7 +461,7 @@ impl TimeGraph {
     /// Global propagation in O(n<sup>3</sup>).
     ///
     /// All the graph constraints are propagated.
-    fn propagate(&mut self) -> TimePropagation
+    fn propagate(&mut self) -> TimePropagationResult
     {
         let mut stgchanged = false;
         for k in 0..self.size {
@@ -485,14 +476,14 @@ impl TimeGraph {
                     }
                 }
                 if unsafe { self.lower_constraint_unchecked(i,i) }.is_strictly_positive() {
-                    return TimePropagation::Fatal
+                    return Err(TimeInconsistencyError::Fatal)
                 }
             }
         }
         if stgchanged {
-            TimePropagation::Propagated
+            Ok(TimePropagation::Propagated)
         } else {
-            TimePropagation::Unchanged
+            Ok(TimePropagation::Unchanged)
         }
     }
 }
@@ -521,8 +512,6 @@ impl FromIterator<TimeConstraint> for TimeGraph
 
 
 
-use std::fmt;
-use std::iter::FusedIterator;
 
 impl fmt::Display for TimeGraph
 {
@@ -560,6 +549,17 @@ impl fmt::Debug for TimeGraph
             }
             Ok(())
         }
+    }
+}
+
+
+impl Error for TimeInconsistencyError {
+
+}
+
+impl fmt::Display for TimeInconsistencyError {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("inconsistency detected when propagating time constraints")
     }
 }
 

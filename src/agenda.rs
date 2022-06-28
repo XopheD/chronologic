@@ -2,7 +2,7 @@
 
 use std::fmt::{Debug, Formatter};
 use std::iter;
-use crate::graph::{TimePropagation,TimeGraph};
+use crate::graph::{TimePropagationResult, TimeGraph};
 use super::*;
 
 
@@ -42,46 +42,44 @@ impl Agenda<'_> {
     }
 
     /// Ensure that all the agenda will end at or before the deadline
-    pub fn set_deadline(&mut self, deadline: Timestamp) -> TimePropagation
+    pub fn set_deadline(&mut self, deadline: Timestamp) -> TimePropagationResult
     {
         // first, check if this deadline is compatible
         if self.agenda.iter().any(|tw| tw.lower_bound() > deadline) {
-            TimePropagation::Recovered
+            Err(TimeInconsistencyError::Recovered)
         } else {
             // we know that the propagation will succeed
-            (0..self.agenda.len() as u32)
+            Ok((0..self.agenda.len() as u32)
                 .fold(TimePropagation::Unchanged,
                       |result, i|
-                          match self.restrict(i, ..=deadline) {
-                              TimePropagation::Unchanged => result,
-                              TimePropagation::Propagated => TimePropagation::Propagated,
-                              _ => unreachable!()
-                          })
+                          match self.restrict(i, ..=deadline).unwrap() {
+                              TimePropagation::Unchanged => { result }
+                              TimePropagation::Propagated => { TimePropagation::Propagated }
+                          }))
         }
     }
 
     /// Ensure that all the agenda will start at or after the startline
-    pub fn set_startline(&mut self, startline: Timestamp) -> TimePropagation
+    pub fn set_startline(&mut self, startline: Timestamp) -> TimePropagationResult
     {
         // first, check if this startline is compatible
         if self.agenda.iter().any(|tw| tw.upper_bound() < startline) {
-            TimePropagation::Recovered
+            Err(TimeInconsistencyError::Recovered)
         } else {
             // we know that the propagation will succeed
-            (0..self.agenda.len() as u32)
+            Ok((0..self.agenda.len() as u32)
                 .fold(TimePropagation::Unchanged,
                       |result, i|
-                          match self.restrict(i, startline..) {
-                              TimePropagation::Unchanged => result,
-                              TimePropagation::Propagated => TimePropagation::Propagated,
-                              _ => unreachable!()
-                          })
+                          match self.restrict(i, startline..).unwrap() {
+                              TimePropagation::Unchanged => { result }
+                              TimePropagation::Propagated => { TimePropagation::Propagated }
+                          }))
         }
     }
 
 
     /// Add a new constraint on one agenda entry
-    pub fn restrict<TW>(&mut self, i: u32, tw: TW) -> TimePropagation
+    pub fn restrict<TW>(&mut self, i: u32, tw: TW) -> TimePropagationResult
         where TW:TimeWindow<TimePoint=Timestamp>+TimeConvex+Clone
     {
         // checks the index now, and use unsafe get_unchecked in the fn body
@@ -89,18 +87,18 @@ impl Agenda<'_> {
 
         let reduced = self.agenda[i as usize].clone() & tw.clone();
         if reduced.is_empty() {
-            TimePropagation::Recovered
+            Err(TimeInconsistencyError::Recovered)
         } else if reduced.eq(unsafe { self.agenda.get_unchecked(i as usize) }) {
-            TimePropagation::Unchanged
+            Ok(TimePropagation::Unchanged)
         } else {
             let t = self.agenda.get(i as usize).unwrap();
             if tw.contains(t) {
-                TimePropagation::Unchanged
+                Ok(TimePropagation::Unchanged)
             } else {
                 self.agenda.iter_mut()
                     .zip(self.constraints.constraints_iter(i))
                     .for_each(|(t, k)| { *t &= reduced.clone() + k; });
-                TimePropagation::Propagated
+                Ok(TimePropagation::Propagated)
             }
         }
     }
