@@ -25,6 +25,12 @@ impl Default for TimeSpan {
     }
 }
 
+impl TimeSlot {
+    #[inline] pub fn duration(&self) -> TimeValue {
+        self.upper - self.lower
+    }
+}
+
 impl<T:TimePoint> TimeInterval<T>
 {
     #[inline]
