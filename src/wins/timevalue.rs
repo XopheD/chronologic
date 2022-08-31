@@ -1,10 +1,8 @@
-use std::ops::Neg;
+use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 use std::time;
 use std::fmt;
 use chrono::Duration;
-use crate::TimeError;
-
-use super::*;
+use crate::*;
 
 
 /// # A single time value (duration)
@@ -48,6 +46,9 @@ impl TimeValue {
             Self((sec<<SUBSEC_BITLEN) + ((frac << SUBSEC_BITLEN)/unit))
         }
     }
+
+    #[inline]
+    pub fn from_weeks(weeks:i64) -> Self { TimeValue::from_days(7*weeks) }
 
     #[inline]
     pub fn from_days(days:i64) -> Self { TimeValue::from_hours(24*days) }
@@ -135,8 +136,8 @@ impl TimeValue {
             }
         )
     }
-
 }
+
 
 impl TimePoint for TimeValue
 {
@@ -269,51 +270,48 @@ impl fmt::Display for TimeValue
     }
 }
 
-impl<T:TimePoint> TimeConvex for T { }
-
-impl<T:TimePoint> TimeWindow for T
+impl TimeBounds for TimeValue
 {
     type TimePoint = Self;
-    #[inline]
-    fn is_empty(&self) -> bool { self.is_finite() }
-    #[inline]
-    fn is_singleton(&self) -> bool { self.is_finite() }
-    #[inline]
-    fn is_bounded(&self) -> bool { self.is_finite() }
-    #[inline]
-    fn is_low_bounded(&self) -> bool { self.is_finite() }
-    #[inline]
-    fn is_up_bounded(&self) -> bool { self.is_finite() }
-    #[inline]
-    fn is_convex(&self) -> bool { true }
-    #[inline]
-    fn lower_bound(&self) -> Self::TimePoint { *self }
-    #[inline]
-    fn upper_bound(&self) -> Self::TimePoint { *self }
+    #[inline] fn is_empty(&self) -> bool { false }
+    #[inline] fn is_singleton(&self) -> bool { true }
+    #[inline] fn is_bounded(&self) -> bool { self.is_finite() }
+    #[inline] fn is_low_bounded(&self) -> bool { self.is_finite() }
+    #[inline] fn is_up_bounded(&self) -> bool { self.is_finite() }
+    #[inline] fn lower_bound(&self) -> Self::TimePoint { *self }
+    #[inline] fn upper_bound(&self) -> Self::TimePoint { *self }
 }
 
 
-impl TimeTranslation for TimeValue
-{
-    fn translate(&self, other: TimeValue) -> TimeResult<Self>
+impl Add for TimeValue {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, other: Self) -> Self
     {
         if self.is_future_infinite() {
-            if other.is_past_infinite() {
-                Err(TimeError::UndefinedValue)
-            } else {
-                Ok(*self)
-            }
+            assert!(!other.is_past_infinite(), "time error: +oo + -oo");
+            self
         } else if self.is_past_infinite() {
-            if other.is_future_infinite() {
-                Err(TimeError::UndefinedValue)
-            } else {
-                Ok(*self)
-            }
+            assert!(!other.is_future_infinite(), "time error: -oo + +oo");
+            self
         } else if other.is_finite() {
-            Ok(Self::from_ticks(self.0.saturating_add(other.0)))
+            Self::from_ticks(self.0.saturating_add(other.0))
         } else {
-            Ok(other)
+            other
         }
     }
 }
 
+impl AddAssign for TimeValue {
+    #[inline] fn add_assign(&mut self, other: TimeValue) { *self = *self + other; }
+}
+
+impl Sub for TimeValue {
+    type Output = Self;
+    #[inline] fn sub(self, v: TimeValue) -> Self { self + (-v) }
+}
+
+impl SubAssign for TimeValue {
+    #[inline] fn sub_assign(&mut self, v: TimeValue) { *self += -v }
+}

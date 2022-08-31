@@ -80,12 +80,13 @@ impl Agenda<'_> {
 
     /// Add a new constraint on one agenda entry
     pub fn restrict<TW>(&mut self, i: u32, tw: TW) -> TimePropagationResult
-        where TW:TimeWindow<TimePoint=Timestamp>+TimeConvex+Clone
+        where
+            TimeSlots: TimeIntersection<TW,Output=TimeSlots>
     {
         // checks the index now, and use unsafe get_unchecked in the fn body
         assert![ (i as usize) < self.agenda.len(), "index out of bounds"];
 
-        let reduced = self.agenda[i as usize].clone() & tw.clone();
+        let reduced = self.agenda[i as usize].intersection(tw);
         if reduced.is_empty() {
             Err(TimeInconsistencyError::Recovered)
         } else if reduced.eq(unsafe { self.agenda.get_unchecked(i as usize) }) {
@@ -123,7 +124,7 @@ impl Debug for Agenda<'_> {
 pub mod tests {
     use crate::*;
     use crate::graph::TimeGraph;
-    use crate::agenda::Agenda;
+    use crate::graph::Agenda;
 
     #[test]
     fn propagation() -> Result<(),Option<TimeGraph>>

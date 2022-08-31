@@ -1,4 +1,4 @@
-use std::ops::Neg;
+use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
 use std::fmt;
 use std::time::SystemTime;
@@ -105,13 +105,6 @@ impl Timestamped for Timestamp
     fn timestamp(&self) -> Timestamp { *self }
 }
 
-impl TimeTranslation for Timestamp
-{
-    #[inline]
-    fn translate(&self, t: TimeValue) -> TimeResult<Self> {
-        self.0.translate(t).map(|t| Self(t))
-    }
-}
 
 impl Into<NaiveDateTime> for Timestamp
 {
@@ -137,3 +130,44 @@ impl<Tz:TimeZone> From<DateTime<Tz>> for Timestamp
     }
 }
 
+
+
+impl Sub for Timestamp {
+    type Output = TimeValue;
+    /// Distance between two timestamps
+    #[inline] fn sub(self, other: Self) -> Self::Output { self.0 - other.0 }
+}
+
+impl Add<TimeValue> for Timestamp
+{
+    type Output = Self;
+    #[inline] fn add(self, other: TimeValue) -> Self::Output { Self(self.0+other) }
+}
+
+impl Sub<TimeValue> for Timestamp
+{
+    type Output = Self;
+    #[inline] fn sub(self, other: TimeValue) -> Self::Output { Self(self.0-other) }
+}
+
+impl AddAssign<TimeValue> for Timestamp
+{
+    #[inline]
+    fn add_assign(&mut self, other: TimeValue) { self.0 += other; }
+}
+
+impl SubAssign<TimeValue> for Timestamp
+{
+    #[inline]
+    fn sub_assign(&mut self, other: TimeValue) { self.0 -= other; }
+}
+
+impl Add<Timestamp> for TimeValue {
+    type Output = Timestamp;
+    #[inline] fn add(self, tw: Self::Output) -> Self::Output { tw + self }
+}
+
+impl Sub<Timestamp> for TimeValue {
+    type Output = Timestamp;
+    #[inline] fn sub(self, tw: Self::Output) -> Self::Output { (-tw) + self }
+}

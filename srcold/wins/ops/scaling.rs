@@ -1,4 +1,4 @@
-use super::*;
+use crate::*;
 use std::ops::{Div, DivAssign, Mul, MulAssign};
 
 //-------------- TIMEVALUE SCALING -----------------------------

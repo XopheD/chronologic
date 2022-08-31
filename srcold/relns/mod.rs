@@ -15,7 +15,7 @@ mod tests {
     fn checktw<T:Debug>(check:&str, x:&T) {
         assert_eq!( check, &format!("{:?}", x));
     }
-
+/*
     #[test]
     fn contains()
     {
@@ -41,7 +41,7 @@ mod tests {
         let tw : TimeSlots = !t1 & !t5 & !t10;
         dbg!(&tw);
         assert!( !tw.contains(&t5));
-    }
+    }*/
 
 }
 

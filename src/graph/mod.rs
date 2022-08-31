@@ -1,3 +1,5 @@
+//! # Time constraints management
+
 /// # A graph of non disjunctive time constraints.
 
 /// Each node  of the graph corresponds to an instant and
@@ -66,6 +68,7 @@
 #[embed_doc_image("timegraph-2", "images/timegraph-2.png")]
 #[embed_doc_image("timegraph-3", "images/timegraph-3.png")]
 
+
 #[derive(Clone)]
 pub struct TimeGraph {
     size : u32,
@@ -103,6 +106,9 @@ pub enum TimeInconsistencyError {
     /// wrong further time propagation)
     Fatal
 }
+
+mod agenda;
+pub use agenda::*;
 
 use std::fmt;
 use std::iter::FusedIterator;
@@ -440,7 +446,7 @@ impl TimeGraph {
     pub fn add_time_constraints<TW,I>(&mut self, iter:I) -> TimePropagationResult
         where
             TW:TimeConvex+TimeWindow<TimePoint=TimeValue>,
-            I:IntoIterator<Item=((u32,u32),TW)>
+            I: IntoIterator<Item=((u32, u32), TW)>
     {
         iter.into_iter()
             .for_each(|((i,j), tw)| {

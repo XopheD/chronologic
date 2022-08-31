@@ -1,7 +1,7 @@
 use std::fmt;
-use std::ops::{Neg, Not};
+use std::ops::Neg;
 use crate::*;
-use crate::error::TimeError;
+
 
 /// A union of [`TimeSpan`] (aliased to [`TimeSet<TimeValue>`])
 pub type TimeSpans = TimeSet<TimeValue>;
@@ -32,39 +32,29 @@ impl<T:TimePoint> TimeSet<T>
     ///
     /// Returns a timeset composed of one convex interval.
     #[inline]
-    pub fn convex(lower: T, upper: T) -> Result<Self,TimeError>
+    pub fn convex(lower: T, upper: T) -> Self
     {
-        match TimeInterval::new(lower, upper) {
-            Ok(tw) => { Ok(Self(vec![tw])) }
-            Err(TimeError::EmptyInterval) => { Ok(Self::empty()) }
-            Err(err) => Err(err)
-        }
+        let tw = TimeInterval::new(lower, upper);
+        if tw.is_empty() { Self::empty() } else { Self(vec![tw]) }
     }
 
     /// A singleton `{t}`
     ///
     /// Retuns a timeset composed of the convex interval `[t,t]`
     #[inline]
-    pub fn singleton(t: T) -> Result<Self,TimeError> {
-        TimeInterval::singleton(t).map(|tw| Self(vec![tw]))
+    pub fn singleton(t: T) -> Self {
+        Self(vec![TimeInterval::singleton(t)])
     }
 
     /// The empty set
     #[inline]
     pub fn empty() -> Self { Self(vec![]) }
 
-    /// Inner intervals ordered access
-    ///
-    /// This method gives an access to the inner intervals describing this set.
-    /// The intervals are all distints, without any overlapping nor meeting
-    /// (i.e. each pair of intervals are separated by, at least, one time point).
-    #[inline]
-    pub fn as_slice(&self) -> &[TimeInterval<T>] { self.0.as_slice() }
-
 }
 
 
-impl<T:TimePoint> TimeWindow for TimeSet<T>
+
+impl<T:TimePoint> TimeBounds for TimeSet<T>
 {
     type TimePoint = T;
 
@@ -73,7 +63,7 @@ impl<T:TimePoint> TimeWindow for TimeSet<T>
 
     #[inline]
     fn is_singleton(&self) -> bool {
-        self.is_convex() && unsafe { self.0.get_unchecked(0).is_singleton() }
+        (self.0.len() == 1) && unsafe { self.0.get_unchecked(0).is_singleton() }
     }
 
     #[inline]
@@ -92,30 +82,29 @@ impl<T:TimePoint> TimeWindow for TimeSet<T>
     }
 
     #[inline]
-    fn is_convex(&self) -> bool { self.0.len() == 1 }
-
-    #[inline]
     fn lower_bound(&self) -> Self::TimePoint {
-        self.0.first().expect("empty interval").lower_bound()
+        self.0.first()
+            .map(|i| i.lower_bound())
+            .unwrap_or(Self::TimePoint::INFINITE)
     }
 
     #[inline]
     fn upper_bound(&self) -> Self::TimePoint {
-        self.0.last().expect("empty interval").upper_bound()
+        self.0.last()
+            .map(|i| i.upper_bound())
+            .unwrap_or(-Self::TimePoint::INFINITE)
     }
 }
 
-impl<T:TimePoint+TimeTranslation> TimeTranslation for TimeSet<T>
+
+impl<T:TimePoint> TimeWindow for TimeSet<T>
 {
-    fn translate(&self, t: TimeValue) -> TimeResult<Self>
-    {
-        // adding a constant preserves the structure (order and distance
-        // between successive intervals -> nothing to manage)
-        self.0.iter()
-            .map(|i| i.translate(t))
-            .collect::<TimeResult<Vec<_>>>()
-            .map(|v| Self(v))
-    }
+    #[inline]
+    fn is_convex(&self) -> bool { self.0.len() <= 1 }
+
+
+    #[inline]
+    fn convex_count(&self) -> usize { self.0.len() }
 }
 
 
@@ -128,32 +117,56 @@ impl<T:TimePoint> Neg for TimeSet<T>
     }
 }
 
-impl<T:TimePoint> IntoIterator for TimeSet<T>
+impl<T:TimePoint> FromIterator<TimeInterval<T>> for TimeSet<T>
 {
-    type Item = TimeInterval<T>;
-    type IntoIter = std::vec::IntoIter<Self::Item>;
-    #[inline]
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
+    fn from_iter<I: IntoIterator<Item=TimeInterval<T>>>(iter: I) -> Self
+    {
+        let mut iter = iter.into_iter()
+            .filter(|i| !i.is_empty());
+
+        match iter.next() {
+            None => Self::empty(),
+            Some(i) => {
+                iter.fold(i.into(), |mut r,i| {
+                    // very most of the time, time iterators are chronologically sorted
+                    // if the gap is more than one tick, just add the new convex at the end
+                    if i.lower_bound() > r.upper_bound().just_after() {
+                        r.0.push(i.into()); r
+                    } else {
+                        // todo: could be improved
+                        r.into_iter().union(i).collect()
+                    }
+                })
+            }
+        }
     }
 }
 
-impl<T,TW> FromIterator<TW> for TimeSet<T>
-    where
-        T:TimePoint,
-        TW:TimeWindow<TimePoint=T>+Not<Output=Self>
+
+impl<T:TimePoint> FromIterator<TimeSet<T>> for TimeSet<T>
 {
-    fn from_iter<I: IntoIterator<Item=TW>>(iter: I) -> Self {
-        iter.into_iter().fold(Self::empty(), |r,i| r|i)
+    fn from_iter<I: IntoIterator<Item=TimeSet<T>>>(iter: I) -> Self
+    {
+        iter.into_iter()
+            .reduce(|r,s| r.union(s))
+            .unwrap_or(TimeSet::empty())
     }
 }
 
-impl<I,T> From<I> for TimeSet<T>
+
+impl<T,TW> From<TW> for TimeSet<T>
     where
         T:TimePoint,
-        I:Into<TimeInterval<T>>
+        TW:TimeConvex<TimePoint=T>
 {
-    #[inline] fn from(tw: I) -> Self { Self( vec![tw.into()]) }
+    #[inline] fn from(tw: TW) -> Self
+    {
+        if tw.is_empty() {
+            TimeSet::empty()
+        } else {
+            Self(vec![TimeInterval { lower: tw.lower_bound(), upper: tw.upper_bound()}])
+        }
+    }
 }
 
 

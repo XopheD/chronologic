@@ -1,43 +1,7 @@
 use std::ops::{RangeToInclusive, Add, Sub, AddAssign, SubAssign};
 use crate::*;
 
-impl<T:TimePoint> TimeWindow for RangeToInclusive<T>
-{
-    type TimePoint = T;
-    #[inline] fn is_empty(&self) -> bool { self.upper_bound().is_past_infinite() }
-    #[inline] fn is_singleton(&self) -> bool { false }
-    #[inline] fn is_bounded(&self) -> bool { false }
-    #[inline] fn is_low_bounded(&self) -> bool { false }
-    #[inline] fn is_up_bounded(&self) -> bool { self.upper_bound().is_finite()  }
-    #[inline] fn is_convex(&self) -> bool { true }
-    #[inline] fn lower_bound(&self) -> Self::TimePoint { - Self::TimePoint::INFINITE }
-    #[inline] fn upper_bound(&self) -> Self::TimePoint { self.end } // inclusive
-}
 
-impl<T:TimePoint> TimeConvex for RangeToInclusive<T> {}
-
-impl<T:TimePoint+TimeTranslation> TimeTranslation for RangeToInclusive<T>
-{
-    fn translate(&self, t: TimeValue) -> TimeResult<Self>
-    {
-        let end = self.end.translate(t)?;
-        if end.is_past_infinite() {
-            Err(TimeError::PastOverflow)
-        } else {
-            Ok(..=end)
-        }
-    }
-}
-
-
-impl<T:TimePoint> From<RangeToInclusive<T> > for TimeInterval<T>
-{
-    #[inline]
-    fn from(range: RangeToInclusive<T>) -> Self {
-        assert!( !range.end.is_past_infinite() );
-        TimeInterval { lower: -T::INFINITE, upper: range.end }
-    }
-}
 
 //--------------------- TIME RANGE TRANSLATION -----------------------------------
 
@@ -69,7 +33,9 @@ impl<T> Add<RangeToInclusive<TimeValue>> for TimeInterval<T>
     type Output = Self;
     #[inline]
     fn add(self, other: RangeToInclusive<TimeValue>) -> Self::Output {
-        TimeInterval::before(self.upper + other.upper_bound()).unwrap()
+        let t = self.upper + other.upper_bound();
+        debug_assert!(!t.is_past_infinite(), "time interval translation overflows");
+        TimeInterval { lower: -T::INFINITE, upper: t }
     }
 }
 
@@ -79,7 +45,9 @@ impl<T> Sub<RangeToInclusive<TimeValue>> for TimeInterval<T>
     type Output = Self;
     #[inline]
     fn sub(self, other: RangeToInclusive<TimeValue>) -> Self::Output {
-        TimeInterval::after(self.lower - other.upper_bound()).unwrap()
+        let t = self.lower - other.upper_bound();
+        debug_assert!(!t.is_future_infinite(), "time interval translation overflows");
+        TimeInterval {lower: t, upper: T::INFINITE }
     }
 }
 
@@ -88,7 +56,9 @@ impl Add<RangeToInclusive<Timestamp>> for TimeSpan
     type Output = TimeSlot;
     #[inline]
     fn add(self, other: RangeToInclusive<Timestamp>) -> Self::Output {
-        TimeInterval::before(self.upper + other.upper_bound()).unwrap()
+        let t = self.upper + other.upper_bound();
+        debug_assert!(!t.is_past_infinite(), "time interval translation overflows");
+        TimeInterval { lower: -Timestamp::INFINITE, upper: t }
     }
 }
 
@@ -97,7 +67,9 @@ impl Sub<RangeToInclusive<Timestamp>> for TimeSpan
     type Output = TimeSlot;
     #[inline]
     fn sub(self, other: RangeToInclusive<Timestamp>) -> Self::Output {
-        TimeInterval::after(self.lower - other.upper_bound()).unwrap()
+        let t = self.lower - other.upper_bound();
+        debug_assert!(!t.is_future_infinite(), "time interval translation overflows");
+        TimeInterval {lower: t, upper: Timestamp::INFINITE }
     }
 }
 
@@ -106,7 +78,9 @@ impl Sub<RangeToInclusive<Timestamp>> for TimeSpan
 
 
 impl<T> AddAssign<RangeToInclusive<TimeValue>> for TimeSet<T>
-    where T:TimePoint+Add<TimeValue,Output=T>
+    where
+        T:TimePoint+Add<TimeValue,Output=T>,
+        Self: AddAssign<TimeSpan>
 {
     #[inline]
     fn add_assign(&mut self, other: RangeToInclusive<TimeValue>) {
@@ -115,7 +89,9 @@ impl<T> AddAssign<RangeToInclusive<TimeValue>> for TimeSet<T>
 }
 
 impl<T> SubAssign<RangeToInclusive<TimeValue>> for TimeSet<T>
-    where T:TimePoint+Sub<TimeValue,Output=T>
+    where
+        T:TimePoint+Sub<TimeValue,Output=T>,
+        Self: SubAssign<TimeSpan>
 {
     #[inline]
     fn sub_assign(&mut self, other: RangeToInclusive<TimeValue>) {
@@ -129,7 +105,9 @@ impl<T> Add<RangeToInclusive<TimeValue>> for TimeSet<T>
     type Output = TimeInterval<T>;
     #[inline]
     fn add(self, other: RangeToInclusive<TimeValue>) -> Self::Output {
-        TimeInterval::before(self.upper_bound() + other.upper_bound()).unwrap()
+        let t = self.upper_bound() + other.upper_bound();
+        debug_assert!(!t.is_past_infinite(), "time interval translation overflows");
+        TimeInterval { lower: -T::INFINITE, upper: t }
     }
 }
 
@@ -138,6 +116,8 @@ impl<T> Sub<RangeToInclusive<TimeValue>> for TimeSet<T>
 {
     type Output = TimeInterval<T>;
     #[inline] fn sub(self, other: RangeToInclusive<TimeValue>) -> Self::Output {
-        TimeInterval::after(self.lower_bound() - other.upper_bound()).unwrap()
+        let t = self.lower_bound() - other.upper_bound();
+        debug_assert!(!t.is_future_infinite(), "time interval translation overflows");
+        TimeInterval { lower: t, upper: T::INFINITE }
     }
 }
