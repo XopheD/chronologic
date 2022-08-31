@@ -1,7 +1,7 @@
 use crate::*;
 
 
-/// Time window intersection
+/// # Time window intersection
 pub trait TimeIntersection<TW>
 {
     type Output;

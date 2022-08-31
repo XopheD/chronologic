@@ -5,12 +5,13 @@ mod iter;
 pub use iter::TimeConvexIterator;
 
 mod wins;
+mod range;
 pub use wins::*;
 
 mod ops;
+mod relns;
 pub use ops::*;
 
-mod range;
 
 // pub mod graph;
 

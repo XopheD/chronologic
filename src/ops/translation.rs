@@ -2,9 +2,6 @@ use std::ops::*;
 use crate::*;
 
 
-//---------------------- TIMEVALUE OUTPUT ----------------------
-
-
 //---------------------- TIMERANGE<T> OUTPUT ------------------------
 
 impl<T> Add<TimeValue> for TimeInterval<T>

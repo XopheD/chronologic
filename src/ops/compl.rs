@@ -1,7 +1,7 @@
 use crate::*;
 
 
-/// The complementary of a time set
+/// # The complementary of a time set
 pub trait TimeComplementary {
     type Output;
     fn complementary(self) -> Self::Output;

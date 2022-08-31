@@ -1,14 +1,14 @@
 use crate::*;
 
 /// # A trait for checking time overlapping
-pub trait TimeOverlapping<Rhs = Self> {
-    fn overlaps(&self, rhs: &Rhs) -> bool;
-    fn contains(&self, rhs: &Rhs) -> bool;
+pub trait TimeOverlapping<TW> {
+    fn overlaps(&self, rhs: &TW) -> bool;
+    fn contains(&self, rhs: &TW) -> bool;
 }
 
 
 impl<TW1:TimeConvex,TW2:TimeConvex> TimeOverlapping<TW2> for TW1
-    where TW2: TimeWindow<TimePoint=TW1::TimePoint>
+    where TW2: TimeBounds<TimePoint=TW1::TimePoint>
 {
     #[inline]
     fn overlaps(&self, rhs: &TW2) -> bool {
@@ -59,15 +59,15 @@ impl<T:TimePoint, TW> TimeOverlapping<TW> for TimeSet<T>
     }
 }
 
-impl<T:TimePoint> TimeOverlapping for TimeSet<T>
+impl<T:TimePoint> TimeOverlapping<Self> for TimeSet<T>
 {
     fn overlaps(&self, rhs: &Self) -> bool {
         // todo: optimise it by using order of inner intervals
-        rhs.as_slice().iter().any(|tw| self.overlaps(tw))
+        rhs.into_iter().any(|tw| self.overlaps(&tw))
     }
 
     fn contains(&self, rhs: &Self) -> bool {
         // todo: optimise it by using order of inner intervals
-        rhs.as_slice().iter().all(|tw| self.contains(tw))
+        rhs.into_iter().all(|tw| self.contains(&tw))
     }
 }

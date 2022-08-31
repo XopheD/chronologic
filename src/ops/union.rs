@@ -1,7 +1,7 @@
 use crate::*;
 
 
-/// Time window union
+/// # Time window union
 pub trait TimeUnion<TW>
 {
     type Output;

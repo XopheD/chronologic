@@ -1,9 +1,7 @@
 //! # Time relations
 mod overlapping;
-mod ordering;
 
 pub use overlapping::*;
-pub use ordering::*;
 
 
 #[cfg(test)]
