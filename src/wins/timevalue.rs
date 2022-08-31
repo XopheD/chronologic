@@ -282,6 +282,9 @@ impl TimeBounds for TimeValue
     #[inline] fn upper_bound(&self) -> Self::TimePoint { *self }
 }
 
+impl TimeConvex for TimeValue {}
+
+
 
 impl Add for TimeValue {
     type Output = Self;

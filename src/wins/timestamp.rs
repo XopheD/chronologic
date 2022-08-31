@@ -98,6 +98,20 @@ impl TimePoint for Timestamp
     #[inline] fn just_before(&self) -> Self { Self(self.0.just_before()) }
 }
 
+impl TimeBounds for Timestamp
+{
+    type TimePoint = Self;
+    #[inline] fn is_empty(&self) -> bool { false }
+    #[inline] fn is_singleton(&self) -> bool { true }
+    #[inline] fn is_bounded(&self) -> bool { self.is_finite() }
+    #[inline] fn is_low_bounded(&self) -> bool { self.is_finite() }
+    #[inline] fn is_up_bounded(&self) -> bool { self.is_finite() }
+    #[inline] fn lower_bound(&self) -> Self::TimePoint { *self }
+    #[inline] fn upper_bound(&self) -> Self::TimePoint { *self }
+}
+
+impl TimeConvex for Timestamp {}
+
 
 impl Timestamped for Timestamp
 {

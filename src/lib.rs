@@ -11,6 +11,7 @@ pub use wins::*;
 mod ops;
 mod relns;
 pub use ops::*;
+pub use relns::*;
 
 
 // pub mod graph;

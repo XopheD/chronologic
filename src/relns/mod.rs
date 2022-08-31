@@ -13,7 +13,7 @@ mod tests {
     fn checktw<T:Debug>(check:&str, x:&T) {
         assert_eq!( check, &format!("{:?}", x));
     }
-/*
+
     #[test]
     fn contains()
     {
@@ -21,7 +21,9 @@ mod tests {
         let t5 = TimeValue::from_ticks(5);
         let t10 = TimeValue::from_ticks(10);
         let tw10 = TimeSpan::centered(t10, t5).unwrap();
-        let tw = !t1 & !t5 & !tw10;
+        let tw = t1.complementary()
+            .intersection(t5.complementary())
+            .intersection(tw10.complementary());
         checktw( "]-oo,0]U[2,4]U[16,+oo[", &tw);
 
         assert!( tw.contains(&TimeValue::from_ticks(3)));
@@ -36,10 +38,12 @@ mod tests {
         let t1 = Timestamp::default()+TimeValue::from_ticks(1);
         let t5 = Timestamp::default()+TimeValue::from_ticks(5);
         let t10 = Timestamp::default()+TimeValue::from_ticks(10);
-        let tw : TimeSlots = !t1 & !t5 & !t10;
+        let tw = t1.complementary()
+            .intersection(t5.complementary())
+            .intersection(t10.complementary());
         dbg!(&tw);
         assert!( !tw.contains(&t5));
-    }*/
+    }
 
 }
 
