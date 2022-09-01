@@ -2,8 +2,8 @@
 
 use std::fmt::{Debug, Formatter};
 use std::iter;
-use crate::graph::{TimePropagationResult, TimeGraph};
-use super::*;
+use crate::*;
+use crate::graph::*;
 
 
 /// # A manager of constrained time variables.
@@ -81,12 +81,16 @@ impl Agenda<'_> {
     /// Add a new constraint on one agenda entry
     pub fn restrict<TW>(&mut self, i: u32, tw: TW) -> TimePropagationResult
         where
-            TimeSlots: TimeIntersection<TW,Output=TimeSlots>
+            TimeSlots: TimeIntersection<TW,Output=TimeSlots>,
+            TimeSlots: TimeIntersection<TimeSlots,Output=TimeSlots>,
+            TW: TimeIntersection<TimeSlots,Output=TimeSlots>,
+            TW: TimeOverlapping<TimeSlots>,
+            TW: Clone
     {
         // checks the index now, and use unsafe get_unchecked in the fn body
         assert![ (i as usize) < self.agenda.len(), "index out of bounds"];
 
-        let reduced = self.agenda[i as usize].intersection(tw);
+        let reduced = self.agenda[i as usize].clone().intersection(tw.clone());
         if reduced.is_empty() {
             Err(TimeInconsistencyError::Recovered)
         } else if reduced.eq(unsafe { self.agenda.get_unchecked(i as usize) }) {
@@ -98,7 +102,10 @@ impl Agenda<'_> {
             } else {
                 self.agenda.iter_mut()
                     .zip(self.constraints.constraints_iter(i))
-                    .for_each(|(t, k)| { *t &= reduced.clone() + k; });
+                    .for_each(|(t, k)| {
+                        let reduced = reduced.clone() + k;
+                        *t = reduced.intersection(&*t);
+                    });
                 Ok(TimePropagation::Propagated)
             }
         }

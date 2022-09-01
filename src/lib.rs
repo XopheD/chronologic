@@ -13,8 +13,7 @@ mod relns;
 pub use ops::*;
 pub use relns::*;
 
-
-// pub mod graph;
+pub mod graph;
 
 pub use ops::{TimeComplementary,TimeUnion,TimeIntersection};
 

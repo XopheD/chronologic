@@ -90,6 +90,26 @@ macro_rules! timerange {
                 Into::<TimeInterval<_>>::into(self).intersection(tw)
             }
         }
+        impl<T:TimePoint> TimeUnion<TimeSet<T>> for $range<T>
+        {
+            type Output = TimeSet<T>;
+            #[inline] fn union(self, tw: TimeSet<T>) -> Self::Output { tw.union(self) }
+        }
+        impl<T:TimePoint> TimeUnion<&TimeSet<T>> for $range<T>
+        {
+            type Output = TimeSet<T>;
+            #[inline] fn union(self, tw: &TimeSet<T>) -> Self::Output { tw.union(self) }
+        }
+        impl<T:TimePoint> TimeIntersection<TimeSet<T>> for $range<T>
+        {
+            type Output = TimeSet<T>;
+            #[inline] fn intersection(self, tw: TimeSet<T>) -> Self::Output { tw.intersection(self) }
+        }
+        impl<T:TimePoint> TimeIntersection<&TimeSet<T>> for $range<T>
+        {
+            type Output = TimeSet<T>;
+            #[inline] fn intersection(self, tw: &TimeSet<T>) -> Self::Output { tw.intersection(self) }
+        }
         impl<TW:TimeConvexIterator> TimeUnion<$range<TW::TimePoint>> for TW {
             type Output = UnionIter<Self,<TimeInterval<TW::TimePoint> as IntoIterator>::IntoIter>;
             #[inline] fn union(self, tw: $range<TW::TimePoint>) -> Self::Output {

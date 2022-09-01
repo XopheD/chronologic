@@ -71,11 +71,10 @@ impl<T:TimePoint> TimeInterval<T>
 {
     #[inline]
     pub fn new(lower: T, upper: T) -> Self {
-        if (lower < upper)
-            || (!lower.is_future_infinite() && !upper.is_past_infinite()) {
+        if (lower <= upper) && !lower.is_future_infinite() && !upper.is_past_infinite() {
             Self { lower, upper }
         } else {
-            Self::default()
+            Self::empty()
         }
     }
 
