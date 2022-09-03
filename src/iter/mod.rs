@@ -1,11 +1,11 @@
 mod compl;
+mod intersect;
 mod union;
-mod intersection;
 
 use crate::*;
 pub use compl::*;
 pub use union::*;
-pub use intersection::*;
+pub use intersect::*;
 
 /// An iterator over sorted and distinct time intervals
 ///
@@ -73,6 +73,7 @@ impl<'a,T:TimePoint> IntoIterator for &'a TimeSet<T>
 mod timeset {
     use std::iter::FusedIterator;
     use crate::*;
+    use crate::iter::*;
 
     pub struct IntoConvexIter<T: TimePoint, I: Iterator<Item=TimeInterval<T>>>(pub(super) I);
 

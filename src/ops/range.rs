@@ -68,48 +68,6 @@ impl<T:TimePoint> From<RangeFull> for TimeInterval<T> {
 macro_rules! timerange {
     ($range:ident) => {
         impl<T:TimePoint> TimeConvex for $range<T> { }
-        impl<T:TimePoint> TimeComplementary for $range<T> {
-            type Output = <TimeInterval<T> as TimeComplementary>::Output;
-            #[inline] fn complementary(self) -> Self::Output {
-                Into::<TimeInterval<_>>::into(self).complementary()
-            }
-        }
-        impl<T:TimePoint,TW> TimeUnion<TW> for $range<T>
-            where TimeInterval<T>: TimeUnion<TW>
-        {
-            type Output = <TimeInterval<T> as TimeUnion<TW>>::Output;
-            #[inline] fn union(self, tw: TW) -> Self::Output {
-                Into::<TimeInterval<_>>::into(self).union(tw)
-            }
-        }
-        impl<T:TimePoint,TW> TimeIntersection<TW> for $range<T>
-            where TimeInterval<T>: TimeIntersection<TW>
-        {
-            type Output = <TimeInterval<T> as TimeIntersection<TW>>::Output;
-            #[inline] fn intersection(self, tw: TW) -> Self::Output {
-                Into::<TimeInterval<_>>::into(self).intersection(tw)
-            }
-        }
-        impl<T:TimePoint> TimeUnion<TimeSet<T>> for $range<T>
-        {
-            type Output = TimeSet<T>;
-            #[inline] fn union(self, tw: TimeSet<T>) -> Self::Output { tw.union(self) }
-        }
-        impl<T:TimePoint> TimeUnion<&TimeSet<T>> for $range<T>
-        {
-            type Output = TimeSet<T>;
-            #[inline] fn union(self, tw: &TimeSet<T>) -> Self::Output { tw.union(self) }
-        }
-        impl<T:TimePoint> TimeIntersection<TimeSet<T>> for $range<T>
-        {
-            type Output = TimeSet<T>;
-            #[inline] fn intersection(self, tw: TimeSet<T>) -> Self::Output { tw.intersection(self) }
-        }
-        impl<T:TimePoint> TimeIntersection<&TimeSet<T>> for $range<T>
-        {
-            type Output = TimeSet<T>;
-            #[inline] fn intersection(self, tw: &TimeSet<T>) -> Self::Output { tw.intersection(self) }
-        }
         impl<TW:TimeConvexIterator> TimeUnion<$range<TW::TimePoint>> for TW {
             type Output = UnionIter<Self,<TimeInterval<TW::TimePoint> as IntoIterator>::IntoIter>;
             #[inline] fn union(self, tw: $range<TW::TimePoint>) -> Self::Output {

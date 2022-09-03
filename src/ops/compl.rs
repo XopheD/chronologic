@@ -1,18 +1,12 @@
+use std::ops::Not;
 use crate::*;
 
 
-/// # The complementary of a time set
-pub trait TimeComplementary {
-    type Output;
-    fn complementary(self) -> Self::Output;
-}
-
-
-impl<T:TimePoint> TimeComplementary for TimeSet<T>
+impl<T:TimePoint> Not for TimeSet<T>
 {
     type Output = Self;
 
-    fn complementary(self) -> Self::Output
+    fn not(self) -> Self::Output
     {
         if let Some(first) = self.0.first() {
             let mut compl = Vec::with_capacity(self.0.len() + 1);
@@ -36,11 +30,11 @@ impl<T:TimePoint> TimeComplementary for TimeSet<T>
 }
 
 
-impl<T:TimePoint> TimeComplementary for TimeInterval<T> {
+impl<T:TimePoint> Not for TimeInterval<T> {
 
     type Output = TimeSet<T>;
 
-    fn complementary(self) -> Self::Output
+    fn not(self) -> Self::Output
     {
         if self.is_empty() {
             TimeSet::all()
@@ -71,9 +65,9 @@ impl<T:TimePoint> TimeComplementary for TimeInterval<T> {
 
 macro_rules! timepoint {
     ($timepoint:ty) => {
-        impl TimeComplementary for $timepoint {
+        impl Not for $timepoint {
             type Output = TimeSet<$timepoint>;
-            fn complementary(self) -> Self::Output {
+            fn not(self) -> Self::Output {
                 let first = TimeInterval::before(self.just_before());
                 let second = TimeInterval::after(self.just_after());
                 if first.is_empty() {

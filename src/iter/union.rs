@@ -1,7 +1,14 @@
 use std::iter::{Fuse, FusedIterator};
 use std::mem::swap;
 use crate::*;
+use crate::iter::*;
 
+/// # Time window union iterator
+pub trait TimeUnion<TW>: TimeConvexIterator
+{
+    type Output:TimeConvexIterator<TimePoint=Self::TimePoint>;
+    fn union(self, tw: TW) -> Self::Output;
+}
 
 
 impl<TW1,TW2> TimeUnion<TW2> for TW1

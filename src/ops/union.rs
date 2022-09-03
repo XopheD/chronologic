@@ -1,81 +1,100 @@
+use std::ops::{BitOr, BitOrAssign};
 use crate::*;
+use crate::iter::TimeUnion;
 
 
-/// # Time window union
-pub trait TimeUnion<TW>
+impl<T:TimePoint,TW> BitOrAssign<TW> for TimeSet<T>
+    where TW: Into<TimeInterval<T>>
 {
-    type Output;
-    fn union(self, tw: TW) -> Self::Output;
+    fn bitor_assign(&mut self, tw: TW) {
+        // todo: optimise cloning
+        *self = self.clone().bitor(tw)
+    }
 }
 
+impl<T:TimePoint> BitOrAssign<Self> for TimeSet<T>
+{
+    fn bitor_assign(&mut self, tw: Self) {
+        // fixme: suppress cloning
+        *self = self.clone().bitor(tw)
+    }
+}
 
-impl<T:TimePoint,TW> TimeUnion<TW> for TimeInterval<T>
+impl<T:TimePoint> BitOrAssign<&Self> for TimeSet<T>
+{
+    fn bitor_assign(&mut self, tw: &Self) {
+        // fixme: suppress cloning
+        *self = self.clone().bitor(tw)
+    }
+}
+
+impl<T:TimePoint,TW> BitOr<TW> for TimeInterval<T>
     where TW: Into<TimeInterval<T>>
 {
     type Output = TimeSet<T>;
-    #[inline] fn union(self, tw: TW) -> Self::Output { (&self).union(tw) }
+    #[inline] fn bitor(self, tw: TW) -> Self::Output { (&self).bitor(tw) }
 }
 
 
-impl<T:TimePoint> TimeUnion<Self> for TimeSet<T>
+impl<T:TimePoint> BitOr<Self> for TimeSet<T>
 {
     type Output = Self;
-    #[inline] fn union(self, tw: Self) -> Self::Output { (&self).union(tw) }
+    #[inline] fn bitor(self, tw: Self) -> Self::Output { (&self).bitor(tw) }
 }
 
-impl<T:TimePoint> TimeUnion<&Self> for TimeSet<T>
+impl<T:TimePoint> BitOr<&Self> for TimeSet<T>
 {
     type Output = Self;
-    #[inline] fn union(self, tw: &Self) -> Self::Output { (&self).union(tw) }
+    #[inline] fn bitor(self, tw: &Self) -> Self::Output { (&self).bitor(tw) }
 }
 
-impl<T:TimePoint, TW> TimeUnion<TW> for TimeSet<T>
+impl<T:TimePoint, TW> BitOr<TW> for TimeSet<T>
     where TW: Into<TimeInterval<T>>
 {
     type Output = Self;
-    #[inline] fn union(self, tw: TW) -> Self::Output { (&self).union(tw) }
+    #[inline] fn bitor(self, tw: TW) -> Self::Output { (&self).bitor(tw) }
 }
 
 
-impl<T:TimePoint> TimeUnion<TimeSet<T>> for &TimeSet<T>
+impl<T:TimePoint> BitOr<TimeSet<T>> for &TimeSet<T>
 {
     type Output = TimeSet<T>;
 
     #[inline]
-    fn union(self, tw: TimeSet<T>) -> Self::Output {
+    fn bitor(self, tw: TimeSet<T>) -> Self::Output {
         self.into_iter().union(tw.into_iter()).collect()
     }
 }
 
-impl<T:TimePoint> TimeUnion<Self> for &TimeSet<T>
+impl<T:TimePoint> BitOr<Self> for &TimeSet<T>
 {
     type Output = TimeSet<T>;
 
     #[inline]
-    fn union(self, tw: &TimeSet<T>) -> Self::Output {
+    fn bitor(self, tw: &TimeSet<T>) -> Self::Output {
         self.into_iter().union(tw.into_iter()).collect()
     }
 }
 
 
-impl<T:TimePoint, TW> TimeUnion<TW> for &TimeSet<T>
+impl<T:TimePoint, TW> BitOr<TW> for &TimeSet<T>
     where TW: Into<TimeInterval<T>>
 {
     type Output = TimeSet<T>;
 
     #[inline]
-    fn union(self, tw: TW) -> Self::Output {
+    fn bitor(self, tw: TW) -> Self::Output {
         self.into_iter().union(tw.into()).collect()
     }
 }
 
 
-impl<T:TimePoint,TW> TimeUnion<TW> for &TimeInterval<T>
+impl<T:TimePoint,TW> BitOr<TW> for &TimeInterval<T>
     where TW: Into<TimeInterval<T>>
 {
     type Output = TimeSet<T>;
 
-    fn union(self, tw: TW) -> Self::Output
+    fn bitor(self, tw: TW) -> Self::Output
     {
         let i = tw.into();
         if self.is_empty() {

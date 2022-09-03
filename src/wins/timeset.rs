@@ -1,6 +1,7 @@
 use std::fmt;
 use std::ops::Neg;
 use crate::*;
+use crate::iter::TimeUnion;
 
 
 /// A union of [`TimeSpan`] (aliased to [`TimeSet<TimeValue>`])
@@ -148,7 +149,7 @@ impl<T:TimePoint> FromIterator<TimeSet<T>> for TimeSet<T>
     fn from_iter<I: IntoIterator<Item=TimeSet<T>>>(iter: I) -> Self
     {
         iter.into_iter()
-            .reduce(|r,s| r.union(s))
+            .reduce(|r,s| r|s)
             .unwrap_or(TimeSet::empty())
     }
 }

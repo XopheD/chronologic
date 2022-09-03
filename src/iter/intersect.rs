@@ -1,7 +1,14 @@
 use std::iter::{Fuse, FusedIterator};
 use std::mem::swap;
 use crate::*;
+use crate::iter::*;
 
+/// # Time window intersection iterator
+pub trait TimeIntersection<TW>: TimeConvexIterator
+{
+    type Output:TimeConvexIterator<TimePoint=Self::TimePoint>;
+    fn intersection(self, tw: TW) -> Self::Output;
+}
 
 impl<TW1:TimeConvexIterator,TW2> TimeIntersection<TW2> for TW1
     where
@@ -236,25 +243,3 @@ impl<I,J> FusedIterator for InterIter<I,J>
         J:TimeConvexIterator<TimePoint=I::TimePoint> {}
 
 
-
-#[cfg(test)]
-pub mod tests {
-    use crate::*;
-
-    #[test]
-    fn inter()
-    {
-        let i:TimeInterval<_> = (TimeValue::from_ticks(0) ..= TimeValue::from_ticks(200)).into();
-
-        let k = (TimeValue::from_ticks(100) ..= TimeValue::from_ticks(155))
-           // .complementary()
-            .intersection(i)
-            .intersection(TimeValue::from_ticks(0) ..= TimeValue::from_ticks(200))
-            //.complementary()
-            ;
-        dbg!(k);
-        //  | (TimeValue::from_ticks(7) ..= TimeValue::from_ticks(10))
-        // | (TimeValue::from_ticks(10) ..= TimeValue::from_ticks(25));
-
-    }
-}

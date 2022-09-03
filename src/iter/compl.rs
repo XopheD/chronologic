@@ -1,5 +1,13 @@
 use std::iter::{Fuse, FusedIterator};
 use crate::*;
+use crate::iter::*;
+
+/// # The complementary iterator of a time set
+pub trait TimeComplementary: TimeConvexIterator {
+    type Output:TimeConvexIterator<TimePoint=Self::TimePoint>;
+    fn complementary(self) -> Self::Output;
+}
+
 
 impl<TW> TimeComplementary for TW
     where

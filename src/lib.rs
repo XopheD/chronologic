@@ -1,21 +1,17 @@
 // #![feature(test)]
 
-
-mod iter;
-pub use iter::TimeConvexIterator;
-
 mod wins;
-mod range;
 pub use wins::*;
 
+pub mod iter;
+
 mod ops;
+
 mod relns;
-pub use ops::*;
 pub use relns::*;
 
 pub mod graph;
 
-pub use ops::{TimeComplementary,TimeUnion,TimeIntersection};
 
 use std::fmt::Debug;
 use std::ops::Neg;

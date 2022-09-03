@@ -1,12 +1,7 @@
-mod intersection;
-pub use intersection::*;
-
 mod union;
-pub use union::*;
-
+mod intersect;
 mod compl;
+
 mod scaling;
-mod translation;
-
-pub use compl::*;
-
+mod transl;
+mod range;
