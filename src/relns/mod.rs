@@ -1,8 +1,10 @@
 //! # Time relations
 mod overlap;
 mod ordering;
+mod contain;
 
 pub use overlap::*;
+pub use contain::*;
 
 #[cfg(test)]
 mod tests {
