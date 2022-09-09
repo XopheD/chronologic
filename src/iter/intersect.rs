@@ -14,53 +14,53 @@ impl<TW1:TimeConvexIterator,TW2> TimeIntersection<TW2> for TW1
     where
         TW2: TimeConvexIterator<TimePoint=TW1::TimePoint>
 {
-    type Output = InterIter<Self,TW2>;
+    type Output = IterIntersection<Self,TW2>;
 
     #[inline]
     fn intersection(self, tw: TW2) -> Self::Output {
-        InterIter::new(self, tw)
+        IterIntersection::new(self, tw)
     }
 }
 
 impl<TW:TimeConvexIterator> TimeIntersection<TimeInterval<TW::TimePoint>> for TW
 {
-    type Output = InterIter<Self,<TimeInterval<TW::TimePoint> as IntoIterator>::IntoIter>;
+    type Output = IterIntersection<Self,<TimeInterval<TW::TimePoint> as IntoIterator>::IntoIter>;
 
     #[inline]
     fn intersection(self, tw: TimeInterval<TW::TimePoint>) -> Self::Output {
-        InterIter::new(self, tw.into_iter())
+        IterIntersection::new(self, tw.into_iter())
     }
 }
 
 impl<TW:TimeConvexIterator> TimeIntersection<&TimeInterval<TW::TimePoint>> for TW
 {
-    type Output = InterIter<Self,<TimeInterval<TW::TimePoint> as IntoIterator>::IntoIter>;
+    type Output = IterIntersection<Self,<TimeInterval<TW::TimePoint> as IntoIterator>::IntoIter>;
 
     #[inline]
     fn intersection(self, tw: &TimeInterval<TW::TimePoint>) -> Self::Output {
-        InterIter::new(self, tw.into_iter())
+        IterIntersection::new(self, tw.into_iter())
     }
 }
 
 
 impl<TW:TimeConvexIterator> TimeIntersection<TimeSet<TW::TimePoint>> for TW
 {
-    type Output = InterIter<Self,<TimeSet<TW::TimePoint> as IntoIterator>::IntoIter>;
+    type Output = IterIntersection<Self,<TimeSet<TW::TimePoint> as IntoIterator>::IntoIter>;
 
     #[inline]
     fn intersection(self, tw: TimeSet<TW::TimePoint>) -> Self::Output {
-        InterIter::new(self, tw.into_iter())
+        IterIntersection::new(self, tw.into_iter())
     }
 }
 
 impl<TW:TimeConvexIterator> TimeIntersection<&TimeSet<TW::TimePoint>> for TW
 {
-    type Output = InterIter<Self,<TimeSet<TW::TimePoint> as IntoIterator>::IntoIter>;
+    type Output = IterIntersection<Self,<TimeSet<TW::TimePoint> as IntoIterator>::IntoIter>;
 
     #[inline]
     fn intersection(self, tw: &TimeSet<TW::TimePoint>) -> Self::Output {
         // todo: suppress the clone call
-        InterIter::new(self, tw.clone().into_iter())
+        IterIntersection::new(self, tw.clone().into_iter())
     }
 }
 
@@ -78,7 +78,7 @@ enum InterState {
 }
 
 
-pub struct InterIter<I,J>
+pub struct IterIntersection<I,J>
     where
         I:TimeConvexIterator,
         J:TimeConvexIterator<TimePoint=I::TimePoint>
@@ -86,7 +86,7 @@ pub struct InterIter<I,J>
     i: Fuse<I>, j: Fuse<J>, state: InterState, tmp: TimeInterval<I::TimePoint>
 }
 
-impl<I,J> InterIter<I,J>
+impl<I,J> IterIntersection<I,J>
     where
         I:TimeConvexIterator,
         J:TimeConvexIterator<TimePoint=I::TimePoint>
@@ -97,7 +97,7 @@ impl<I,J> InterIter<I,J>
 }
 
 
-impl<I,J> Iterator for InterIter<I,J>
+impl<I,J> Iterator for IterIntersection<I,J>
     where
         I:TimeConvexIterator,
         J:TimeConvexIterator<TimePoint=I::TimePoint>
@@ -229,7 +229,7 @@ impl<I,J> Iterator for InterIter<I,J>
     }
 }
 
-impl<I,J> TimeConvexIterator for InterIter<I,J>
+impl<I,J> TimeConvexIterator for IterIntersection<I,J>
     where
         I:TimeConvexIterator,
         J:TimeConvexIterator<TimePoint=I::TimePoint>
@@ -237,7 +237,7 @@ impl<I,J> TimeConvexIterator for InterIter<I,J>
     type TimePoint = I::TimePoint;
 }
 
-impl<I,J> FusedIterator for InterIter<I,J>
+impl<I,J> FusedIterator for IterIntersection<I,J>
     where
         I:TimeConvexIterator,
         J:TimeConvexIterator<TimePoint=I::TimePoint> {}

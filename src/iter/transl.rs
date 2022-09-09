@@ -1,20 +1,25 @@
 use crate::*;
-use crate::wins::*;
+use crate::iter::*;
 
-/// # A trait for time translation of time window
-pub trait TimeTranslation<TW> : TimeWindow
-    where
-        TW: TimeWindow<TimePoint=TimeValue>
+
+/// # Time window translation iterator
+pub trait TimeTranslation<TW>: TimeConvexIterator
 {
-
-    type Output : TimeWindow<TimePoint=Self::TimePoint>;
-    /// Translate the time window
-    ///
-    /// If the translation is not possible (e.g. +oo + -oo),
-    /// an error is returned.
-    fn translate(self, t: &TW) -> TimeResult<Self::Output>;
+    type Output:TimeConvexIterator<TimePoint=Self::TimePoint>;
+    fn translate(self, tw: TW) -> Self::Output;
 }
 
+
+impl<I:TimeConvexIterator> TimeTranslation<TimeValue> for I
+{
+    type Output = ();
+
+    fn translate(self, tw: TimeValue) -> Self::Output {
+        todo!()
+    }
+}
+
+/*
 impl TimeTranslation<TimeValue> for TimeValue
 {
     type Output = Self;
@@ -100,3 +105,4 @@ impl<T:TimePoint> TimeTranslation<TimeValue> for TimeSet<T>
         Ok(self)
     }
 }
+*/

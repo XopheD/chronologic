@@ -16,53 +16,53 @@ impl<TW1,TW2> TimeUnion<TW2> for TW1
         TW1: TimeConvexIterator,
         TW2: TimeConvexIterator<TimePoint=TW1::TimePoint>
 {
-    type Output = UnionIter<Self,TW2>;
+    type Output = IterUnion<Self,TW2>;
 
     #[inline]
     fn union(self, tw: TW2) -> Self::Output {
-        UnionIter::new(self, tw)
+        IterUnion::new(self, tw)
     }
 }
 
 impl<TW:TimeConvexIterator> TimeUnion<TimeInterval<TW::TimePoint>> for TW
 {
-    type Output = UnionIter<Self,<TimeInterval<TW::TimePoint> as IntoIterator>::IntoIter>;
+    type Output = IterUnion<Self,<TimeInterval<TW::TimePoint> as IntoIterator>::IntoIter>;
 
     #[inline]
     fn union(self, tw: TimeInterval<TW::TimePoint>) -> Self::Output {
-        UnionIter::new(self, tw.into_iter())
+        IterUnion::new(self, tw.into_iter())
     }
 }
 
 impl<TW:TimeConvexIterator> TimeUnion<&TimeInterval<TW::TimePoint>> for TW
 {
-    type Output = UnionIter<Self,<TimeInterval<TW::TimePoint> as IntoIterator>::IntoIter>;
+    type Output = IterUnion<Self,<TimeInterval<TW::TimePoint> as IntoIterator>::IntoIter>;
 
     #[inline]
     fn union(self, tw: &TimeInterval<TW::TimePoint>) -> Self::Output {
-        UnionIter::new(self, tw.into_iter())
+        IterUnion::new(self, tw.into_iter())
     }
 }
 
 
 impl<TW:TimeConvexIterator> TimeUnion<TimeSet<TW::TimePoint>> for TW
 {
-    type Output = UnionIter<Self,<TimeSet<TW::TimePoint> as IntoIterator>::IntoIter>;
+    type Output = IterUnion<Self,<TimeSet<TW::TimePoint> as IntoIterator>::IntoIter>;
 
     #[inline]
     fn union(self, tw: TimeSet<TW::TimePoint>) -> Self::Output {
-        UnionIter::new(self, tw.into_iter())
+        IterUnion::new(self, tw.into_iter())
     }
 }
 
 impl<TW:TimeConvexIterator> TimeUnion<&TimeSet<TW::TimePoint>> for TW
 {
-    type Output = UnionIter<Self,<TimeSet<TW::TimePoint> as IntoIterator>::IntoIter>;
+    type Output = IterUnion<Self,<TimeSet<TW::TimePoint> as IntoIterator>::IntoIter>;
 
     #[inline]
     fn union(self, tw: &TimeSet<TW::TimePoint>) -> Self::Output {
         // todo: suppress the clone function
-        UnionIter::new(self, tw.clone().into_iter())
+        IterUnion::new(self, tw.clone().into_iter())
     }
 }
 
@@ -79,7 +79,7 @@ enum UnionState {
 }
 
 
-pub struct UnionIter<I,J>
+pub struct IterUnion<I,J>
     where
         I:TimeConvexIterator,
         J:TimeConvexIterator<TimePoint=I::TimePoint>
@@ -87,7 +87,7 @@ pub struct UnionIter<I,J>
     i: Fuse<I>, j: Fuse<J>, state: UnionState, tmp: TimeInterval<I::TimePoint>
 }
 
-impl<I,J> UnionIter<I,J>
+impl<I,J> IterUnion<I,J>
     where
         I:TimeConvexIterator,
         J:TimeConvexIterator<TimePoint=I::TimePoint>
@@ -99,7 +99,7 @@ impl<I,J> UnionIter<I,J>
 }
 
 
-impl<I,J> Iterator for UnionIter<I,J>
+impl<I,J> Iterator for IterUnion<I,J>
     where
         I:TimeConvexIterator,
         J:TimeConvexIterator<TimePoint=I::TimePoint>
@@ -246,7 +246,7 @@ impl<I,J> Iterator for UnionIter<I,J>
     }
 }
 
-impl<I,J> TimeConvexIterator for UnionIter<I,J>
+impl<I,J> TimeConvexIterator for IterUnion<I,J>
     where
         I:TimeConvexIterator,
         J:TimeConvexIterator<TimePoint=I::TimePoint>
@@ -254,7 +254,7 @@ impl<I,J> TimeConvexIterator for UnionIter<I,J>
     type TimePoint = I::TimePoint;
 }
 
-impl<I,J> FusedIterator for UnionIter<I,J>
+impl<I,J> FusedIterator for IterUnion<I,J>
     where
         I:TimeConvexIterator,
         J:TimeConvexIterator<TimePoint=I::TimePoint> {}

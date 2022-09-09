@@ -1,3 +1,5 @@
+//! Iterators over time windows for efficient algorithms
+
 mod compl;
 mod intersect;
 mod union;
@@ -53,10 +55,10 @@ impl<T:TimePoint> TimeConvexIterator for std::option::IntoIter<TimeInterval<T>> 
 impl<T:TimePoint> IntoIterator for TimeSet<T>
 {
     type Item = TimeInterval<T>;
-    type IntoIter = timeset::IntoConvexIter<T,std::vec::IntoIter<Self::Item>>;
+    type IntoIter = intoiter::IntoConvexIter<T,std::vec::IntoIter<Self::Item>>;
 
     #[inline] fn into_iter(self) -> Self::IntoIter {
-        timeset::IntoConvexIter(self.0.into_iter())
+        intoiter::IntoConvexIter(self.0.into_iter())
     }
 }
 
@@ -64,41 +66,10 @@ impl<T:TimePoint> IntoIterator for TimeSet<T>
 impl<'a,T:TimePoint> IntoIterator for &'a TimeSet<T>
 {
     type Item = TimeInterval<T>;
-    type IntoIter = timeset::IntoConvexIter<T,std::iter::Copied<std::slice::Iter<'a,TimeInterval<T>>>>;
+    type IntoIter = intoiter::IntoConvexIter<T,std::iter::Copied<std::slice::Iter<'a,TimeInterval<T>>>>;
 
-    #[inline] fn into_iter(self) -> Self::IntoIter { timeset::IntoConvexIter(self.0.iter().copied()) }
+    #[inline] fn into_iter(self) -> Self::IntoIter { intoiter::IntoConvexIter(self.0.iter().copied()) }
 
-}
-
-mod timeset {
-    use std::iter::FusedIterator;
-    use crate::*;
-    use crate::iter::*;
-
-    pub struct IntoConvexIter<T: TimePoint, I: Iterator<Item=TimeInterval<T>>>(pub(super) I);
-
-    impl<T: TimePoint, I: Iterator<Item=TimeInterval<T>>> TimeConvexIterator for IntoConvexIter<T, I> {
-        type TimePoint = T;
-    }
-
-    impl<T:TimePoint, I> FusedIterator for IntoConvexIter<T, I>
-        where I: FusedIterator + Iterator<Item=TimeInterval<T>>
-    {}
-
-    impl<T: TimePoint, I: Iterator<Item=TimeInterval<T>>> Iterator for IntoConvexIter<T, I> {
-        type Item = I::Item;
-
-        #[inline]
-        fn next(&mut self) -> Option<Self::Item> { self.0.next() }
-        #[inline]
-        fn size_hint(&self) -> (usize, Option<usize>) { self.0.size_hint() }
-        #[inline]
-        fn count(self) -> usize where Self: Sized { self.0.count() }
-        #[inline]
-        fn last(self) -> Option<Self::Item> where Self: Sized { self.0.last() }
-        #[inline]
-        fn nth(&mut self, n: usize) -> Option<Self::Item> { self.0.nth(n) }
-    }
 }
 
 impl<I> TimeConvexIterator for std::iter::StepBy<I>
@@ -161,9 +132,36 @@ impl<I,F> TimeConvexIterator for std::iter::Inspect<I,F>
     type TimePoint = I::TimePoint;
 }
 
+pub(crate) mod intoiter {
+    use std::iter::FusedIterator;
+    use crate::*;
+    use crate::iter::*;
 
+    // just a wrapper to add the trait TimeConvexIterator to some Iterator but not all
+    // since we should be sure that intervals are sorted and can’t be fused (i.e.
+    // they should be disjoint with a gap of at least one tick)
+    pub struct IntoConvexIter<T: TimePoint, I: Iterator<Item=TimeInterval<T>>>(pub(crate) I);
 
-impl<T:TimePoint> TimeConvexIterator for std::vec::IntoIter<TimeInterval<T>> {
-    type TimePoint = T;
+    impl<T: TimePoint, I: Iterator<Item=TimeInterval<T>>> TimeConvexIterator for IntoConvexIter<T, I> {
+        type TimePoint = T;
+    }
+
+    impl<T:TimePoint, I> FusedIterator for IntoConvexIter<T, I>
+        where I: FusedIterator + Iterator<Item=TimeInterval<T>>
+    {}
+
+    impl<T: TimePoint, I: Iterator<Item=TimeInterval<T>>> Iterator for IntoConvexIter<T, I> {
+        type Item = I::Item;
+
+        #[inline]
+        fn next(&mut self) -> Option<Self::Item> { self.0.next() }
+        #[inline]
+        fn size_hint(&self) -> (usize, Option<usize>) { self.0.size_hint() }
+        #[inline]
+        fn count(self) -> usize where Self: Sized { self.0.count() }
+        #[inline]
+        fn last(self) -> Option<Self::Item> where Self: Sized { self.0.last() }
+        #[inline]
+        fn nth(&mut self, n: usize) -> Option<Self::Item> { self.0.nth(n) }
+    }
 }
-

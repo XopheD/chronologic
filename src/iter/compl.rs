@@ -13,22 +13,22 @@ impl<TW> TimeComplementary for TW
     where
         TW: TimeConvexIterator
 {
-    type Output = ComplIter<Self>;
+    type Output = IterComplementary<Self>;
 
     #[inline]
     fn complementary(self) -> Self::Output {
-        ComplIter::new(self)
+        IterComplementary::new(self)
     }
 }
 
 
-pub struct ComplIter<I:TimeConvexIterator>
+pub struct IterComplementary<I:TimeConvexIterator>
 {
     iter: Fuse<I>,
     lower: I::TimePoint
 }
 
-impl<I:TimeConvexIterator> ComplIter<I>
+impl<I:TimeConvexIterator> IterComplementary<I>
 {
     fn new(iter: I) -> Self {
         Self {
@@ -38,14 +38,14 @@ impl<I:TimeConvexIterator> ComplIter<I>
     }
 }
 
-impl<I:TimeConvexIterator> TimeConvexIterator for ComplIter<I> {
+impl<I:TimeConvexIterator> TimeConvexIterator for IterComplementary<I> {
     type TimePoint = I::TimePoint;
 }
 
-impl<I:TimeConvexIterator> FusedIterator for ComplIter<I> { }
+impl<I:TimeConvexIterator> FusedIterator for IterComplementary<I> { }
 
 
-impl<I:TimeConvexIterator> Iterator for ComplIter<I>
+impl<I:TimeConvexIterator> Iterator for IterComplementary<I>
 {
     type Item = TimeInterval<I::TimePoint>;
 
