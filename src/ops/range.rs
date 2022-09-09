@@ -69,13 +69,13 @@ macro_rules! timerange {
     ($range:ident) => {
         impl<T:TimePoint> TimeConvex for $range<T> { }
         impl<TW:TimeConvexIterator> TimeUnion<$range<TW::TimePoint>> for TW {
-            type Output = UnionIter<Self,<TimeInterval<TW::TimePoint> as IntoIterator>::IntoIter>;
+            type Output = $crate::iter::IterUnion<Self,<TimeInterval<TW::TimePoint> as IntoIterator>::IntoIter>;
             #[inline] fn union(self, tw: $range<TW::TimePoint>) -> Self::Output {
                 self.union(Into::<TimeInterval<_>>::into(tw).into_iter())
             }
         }
         impl<TW:TimeConvexIterator> TimeIntersection<$range<TW::TimePoint>> for TW {
-            type Output = InterIter<Self,<TimeInterval<TW::TimePoint> as IntoIterator>::IntoIter>;
+            type Output = $crate::iter::IterIntersection<Self,<TimeInterval<TW::TimePoint> as IntoIterator>::IntoIter>;
             #[inline] fn intersection(self, tw: $range<TW::TimePoint>) -> Self::Output {
                 self.intersection(Into::<TimeInterval<_>>::into(tw).into_iter())
             }

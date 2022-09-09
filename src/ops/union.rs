@@ -105,7 +105,7 @@ impl<T:TimePoint,TW> BitOr<TW> for &TimeInterval<T>
             }
         } else {
             if i.is_empty() {
-                self.into()
+                (*self).into()
             } else {
                 if i.upper < self.lower.just_before() {
                     TimeSet(vec![i, *self])
