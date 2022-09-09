@@ -15,45 +15,9 @@ pub type TimeSpan = TimeInterval<TimeValue>;
 pub type TimeSlot = TimeInterval<Timestamp>;
 
 /// # A generic interval defined by its two time bounds
-#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Eq, Hash)]
 pub struct TimeInterval<T:TimePoint> { pub(crate) lower:T, pub(crate) upper:T }
 
-impl<T:TimePoint> PartialOrd for TimeInterval<T>
-{
-    #[inline]
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering>
-    {
-        if self.lt(other){
-            Some(Ordering::Less)
-        } else if self.gt(other) {
-            Some(Ordering::Greater)
-        } else if self.eq(other) {
-            Some(Ordering::Equal)
-        } else {
-            None
-        }
-    }
-
-    #[inline]
-    fn lt(&self, other: &Self) -> bool {
-        self.upper < other.lower
-    }
-
-    #[inline]
-    fn le(&self, other: &Self) -> bool {
-        self.lt(other) || self.eq(other)
-    }
-
-    #[inline]
-    fn gt(&self, other: &Self) -> bool {
-        other.lt(self)
-    }
-
-    #[inline]
-    fn ge(&self, other: &Self) -> bool {
-        other.le(self)
-    }
-}
 
 impl<T:TimePoint> Default for TimeInterval<T> {
     /// The default is defined as empty
