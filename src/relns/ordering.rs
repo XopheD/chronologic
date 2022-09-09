@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 use crate::{TimeBounds, TimeInterval, TimePoint, TimeSet, TimeWindow};
-use crate::iter::TimeConvexIterator;
+
 
 impl<T:TimePoint,TW> PartialEq<TW> for TimeInterval<T>
     where

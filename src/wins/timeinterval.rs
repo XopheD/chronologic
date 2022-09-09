@@ -1,4 +1,3 @@
-use std::cmp::Ordering;
 use std::fmt;
 use std::ops::{Add, Neg, Sub};
 use super::*;
