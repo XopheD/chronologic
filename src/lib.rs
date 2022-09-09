@@ -1,5 +1,32 @@
 // #![feature(test)]
 
+//! # Time constraint reasoning
+//!
+//! This crate is dedicated to reasoning about time.
+//! It deals with time constraints, propagate them and
+//! maintain an agenda of all the possible dates consistent
+//! with the user constraints.
+//!
+//! ## Time structures
+//! Several time structures (interval, sets) are provided
+//! to make easier time manipulation.
+//!
+//! This time data defines several operators for union, intersection,
+//! translation in two ways:
+//! * by using standard operators (`&` for intersection, `|` for unsion, `+/-` for translation)
+//! * by using iterator traits (see module [`iter`]) which allows time manipulation with
+//!   saving memory allocation (no intermediate structures needed)
+//!
+//! ## Time constraint management
+//! The module [`graph`] deals with time constraints graph and mainly provides two structures:
+//! * [`graph::TimeGraph`]: the time constraints graph, a time constraint is defined as an interval
+//! of duration between two instants, a graph could be considered as a collection of time constraints
+//! * [`graph::Agenda`]: the agenda maintains a set of slots (one for each instant) according to
+//!   its time graph
+//!
+//! Any modification of constraints are automatically propagated (see [`graph::TimeGraph`] for more
+//! informations about the propagation algorithm).
+//!
 mod wins;
 pub use wins::*;
 
@@ -10,7 +37,7 @@ mod ops;
 mod relns;
 pub use relns::*;
 
-pub mod graph;
+//pub mod graph;
 
 
 use std::fmt::Debug;
@@ -42,7 +69,7 @@ const MAX_SEC: i64 = i64::MAX >> SUBSEC_BITLEN;
 /// In this crate revision, the precision (i.e. the duration of one tick)
 /// is fixed and equals a little bit less that a nanosecond.
 /// It is exactly `1/2^30` seconde.
-pub trait TimePoint : Debug+Clone+Copy+Eq+Ord+Neg<Output=Self> {
+pub trait TimePoint : Debug+Clone+Copy+Eq+Ord+Neg<Output=Self>+Sized {
 
     /// The infinite time point (&infin;) which
     /// is used to infinite time window bounds

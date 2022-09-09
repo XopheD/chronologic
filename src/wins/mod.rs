@@ -7,6 +7,7 @@ pub use timevalue::TimeValue;
 pub use timestamp::{Timestamp,Timestamped};
 pub use timeinterval::*;
 pub use timeset::*;
+use crate::iter::TimeConvexIterator;
 
 
 use crate::TimePoint;
@@ -62,7 +63,7 @@ pub trait TimeBounds {
     fn upper_bound(&self) -> Self::TimePoint;
 }
 
-/// # A set of timepoints
+/// # An arbitrary set of timepoints
 ///
 /// This traits describes the structure of the time window.
 pub trait TimeWindow : TimeBounds {
@@ -70,10 +71,29 @@ pub trait TimeWindow : TimeBounds {
     /// Checks if this time window is an interval
     ///
     /// Note that the empty set is convex.
-    fn is_convex(&self) -> bool { self.convex_count() <= 1 }
+    #[inline] fn is_convex(&self) -> bool { self.convex_count() <= 1 }
 
     /// The number of convex parts
+    ///
+    /// An empty set has 0 convex part.
+    /// A _non-empty_ interval has exactly 1 convex part.
     fn convex_count(&self) -> usize;
+
+    /// Convex envelope of the time window
+    ///
+    /// Formally, the convex envelope is the smallest convex which
+    /// contains the time window.
+    /// In practise, it is the interval defined by the lower and upper
+    /// bounds of the time window.
+    ///
+    /// If the time window is already convex, then the envelope is itself.
+    #[inline] fn convex_envelope(&self) -> TimeInterval<Self::TimePoint> {
+        TimeInterval { lower: self.lower_bound(), upper: self.upper_bound() }
+    }
+
+
+    type ConvexIter: TimeConvexIterator<TimePoint=Self::TimePoint>;
+    fn iter(&self) -> Self::ConvexIter;
 }
 
 
@@ -83,23 +103,11 @@ pub trait TimeWindow : TimeBounds {
 /// that it is a time interval (bounded or not) or an empty set.
 ///
 /// Some computations will be optimized.
-pub trait TimeConvex : TimeBounds+Sized {
+pub trait TimeConvex : TimeBounds+Sized+Into<TimeInterval<Self::TimePoint>> {
 
-    #[inline]
-    fn iter(&self) -> std::option::IntoIter<TimeInterval<Self::TimePoint>>
-    {
-        if self.is_empty() {
-            None.into_iter()
-        } else {
-            Some(TimeInterval {
-                lower:self.lower_bound(),
-                upper:self.upper_bound()
-            }).into_iter()
-        }
-    }
 }
 
-impl<TW:TimeConvex> TimeWindow for TW {
+impl<TW:TimeBounds+Into<TimeInterval<TW::TimePoint>>> TimeWindow for TW {
 
     /// Checks if the time window is convex or not
     ///
@@ -113,18 +121,19 @@ impl<TW:TimeConvex> TimeWindow for TW {
     #[inline] fn convex_count(&self) -> usize {
         if self.is_empty() { 0 } else { 1 }
     }
+
+    type ConvexIter = std::option::IntoIter<TimeInterval<Self::TimePoint>>;
+
+    #[inline]
+    fn iter(&self) -> Self::ConvexIter
+    {
+        if self.is_empty() {
+            None.into_iter()
+        } else {
+            Some(TimeInterval {
+                lower:self.lower_bound(),
+                upper:self.upper_bound()
+            }).into_iter()
+        }
+    }
 }
-
-
-impl<TW:TimeConvex> TimeBounds for &TW {
-    type TimePoint = TW::TimePoint;
-    #[inline] fn is_empty(&self) -> bool { (**self).is_empty() }
-    #[inline] fn is_singleton(&self) -> bool { (**self).is_singleton() }
-    #[inline] fn is_bounded(&self) -> bool { (**self).is_bounded() }
-    #[inline] fn is_low_bounded(&self) -> bool { (**self).is_low_bounded() }
-    #[inline] fn is_up_bounded(&self) -> bool { (**self).is_up_bounded() }
-    #[inline] fn lower_bound(&self) -> Self::TimePoint { (**self).lower_bound() }
-    #[inline] fn upper_bound(&self) -> Self::TimePoint { (**self).upper_bound() }
-}
-
-impl<TW:TimeConvex> TimeConvex for &TW {}
