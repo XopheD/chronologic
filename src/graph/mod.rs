@@ -161,70 +161,9 @@ impl<TW> TimeBounds for ((Instant, Instant), TW)
 /*
 
 
-    pub fn constraints<'a>(&'a self, i:Instant) -> impl 'a + Iterator<Item=TimeSpan> + ExactSizeIterator + FusedIterator
-    {
-        struct Iter<'a>{lower:usize,upper:usize,size:usize,graph:&'a [TimeValue]}
-        impl Iterator for Iter<'_> {
-            type Item = TimeSpan;
-            fn next(&mut self) -> Option<Self::Item> {
-                if self.upper >= self.graph.len() {
-                    None
-                } else {
-                    debug_assert!( self.lower < self.graph.len());
-                    debug_assert!( self.upper < self.graph.len());
-                    let tw = TimeSpan {
-                        lower: unsafe { *self.graph.get_unchecked(self.lower)},
-                        upper: - unsafe { *self.graph.get_unchecked(self.upper)},
-                    };
-                    self.lower += 1;
-                    self.upper += self.size;
-                    Some(tw)
-                }
-            }
-            #[inline] fn size_hint(&self) -> (usize, Option<usize>) {
-                let len = self.len(); (len,Some(len))
-            }
-        }
-        impl ExactSizeIterator for Iter<'_> {
-            #[inline] fn len(&self) -> usize { self.size - self.lower % self.size }
-        }
-        impl FusedIterator for Iter<'_> {}
-
-        Iter {
-            size: self.size as usize, // the number of instants in the time graph
-            graph: self.data.as_slice(), //  the time constraint matrix (flattened)
-            lower: (i*self.size) as usize, // the row `i` contains the lower bound
-            upper: i as usize, // the column `i` contains the opposite of the upper bound
-        }
-    }
 
     #[inline]
-    pub fn time_cmp(&self, i:Instant, j:Instant) -> Option<Ordering>
-    {
-        let k = self.constraint(i,j);
-        if k.lower_bound().is_strictly_positive() {
-                Some(Ordering::Less)
-            } else if k.upper_bound().is_strictly_negative() {
-                Some(Ordering::Greater)
-            } else if k.is_singleton() {
-                debug_assert_eq!(k.lower_bound(), TimeValue::default());
-                Some(Ordering::Equal)
-            } else {
-                None
-            }
-        }
-    }
 
-    // Checks if two instants are necessarily distinct.
-    #[inline]
-    pub fn are_distinct(&self, i:Instant, j:Instant) -> bool
-    {
-        self.constraint(i,j)
-            .map(|k| {
-                k.lower_bound().is_strictly_positive() || k.upper_bound().is_strictly_negative()
-            })
-            .unwrap_or(false)
-    }
 
 
     

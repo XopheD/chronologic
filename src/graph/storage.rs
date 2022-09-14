@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use super::*;
 
 impl Default for TimeGraph {
@@ -111,6 +112,38 @@ impl TimeGraph {
                 }
             }
         }
+    }
+
+    pub fn instant_cmp(&self, i:Instant, j:Instant) -> Option<Ordering>
+    {
+        if i >= self.size() || j >= self.size() {
+            None
+        } else {
+            let ij = unsafe { self.lower(i,j) };
+            if ij.is_strictly_positive() {
+                Some(Ordering::Less)
+            } else {
+                let ji = unsafe { self.lower(j,i) };
+                if ji.is_strictly_positive() {
+                    Some(Ordering::Greater)
+                } else if ij == TimeValue::default() && ji == TimeValue::default() {
+                    Some(Ordering::Equal)
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
+    // Checks if two instants are necessarily distinct.
+    #[inline]
+    pub fn are_distinct_instants(&self, i:Instant, j:Instant) -> bool
+    {
+        self.constraint(i,j)
+            .map(|k| {
+                k.lower_bound().is_strictly_positive() || k.upper_bound().is_strictly_negative()
+            })
+            .unwrap_or(false)
     }
 }
 
