@@ -3,11 +3,13 @@
 mod compl;
 mod intersect;
 mod union;
+mod transl;
 
 use crate::*;
-pub use compl::*;
-pub use union::*;
-pub use intersect::*;
+pub use compl::{TimeComplementary,IterComplementary};
+pub use union::{TimeUnion,IterUnion};
+pub use intersect::{TimeIntersection,IterIntersection};
+pub use transl::TimeTranslation;
 
 /// An iterator over sorted and distinct time intervals
 ///

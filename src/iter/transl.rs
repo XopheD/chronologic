@@ -1,3 +1,4 @@
+use std::ops::Add;
 use crate::*;
 use crate::iter::*;
 
@@ -11,71 +12,54 @@ pub trait TimeTranslation<TW>: TimeConvexIterator
 
 
 impl<I:TimeConvexIterator> TimeTranslation<TimeValue> for I
-{
-    type Output = ();
-
-    fn translate(self, tw: TimeValue) -> Self::Output {
-        todo!()
-    }
-}
-
-/*
-impl TimeTranslation<TimeValue> for TimeValue
-{
-    type Output = Self;
-
-    fn translate(self, other: &TimeValue) -> Self
-    {
-        if self.is_future_infinite() {
-            if other.is_past_infinite() {
-                Err(TimeError::UndefinedValue)
-            } else {
-                Ok(self)
-            }
-        } else if self.is_past_infinite() {
-            if other.is_future_infinite() {
-                Err(TimeError::UndefinedValue)
-            } else {
-                Ok(self)
-            }
-        } else if other.is_finite() {
-            Ok(Self::from_ticks(self.0.saturating_add(other.0)))
-        } else {
-            Ok(*other)
-        }
-    }
-}
-
-impl TimeTranslation<TimeValue> for Timestamp
-{
-    type Output = Self;
-    #[inline]
-    fn translate(self, t: &TimeValue) -> TimeResult<Self> {
-        self.0.translate(t).map(|t| Self(t))
-    }
-}
-
-impl<T,TW> TimeTranslation<TW> for TimeInterval<T>
     where
-        T: TimePoint+TimeTranslation<TimeValue,Output=T>,
-        TW: TimeConvex<TimePoint=TimeValue>
+        I::Item: Add<TimeValue,Output=I::Item>
 {
-    type Output = Self;
+    type Output = TimeValueTranslIter<I>;
 
-    #[inline]
-    fn translate(mut self, tw: &TW) -> TimeResult<Self>
-    {
-        if tw.is_empty() {
-            Err(TimeError::EmptyInterval)
-        } else {
-            self.lower = self.lower.translate(&tw.lower_bound())?;
-            self.upper = self.upper.translate(&tw.upper_bound())?;
-            Ok(self)
-        }
+    fn translate(self, t: TimeValue) -> Self::Output {
+        TimeValueTranslIter{ t, iter: self }
     }
 }
 
+pub struct TimeValueTranslIter<I:TimeConvexIterator> {
+    t: TimeValue,
+    iter: I
+}
 
+impl<I:TimeConvexIterator> Iterator for TimeValueTranslIter<I>
+    where
+        I::Item: Add<TimeValue,Output=I::Item>
+{
+    type Item = I::Item;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|tw| tw+self.t)
+            .and_then(|tw| if tw.is_empty() { None } else { Some(tw) })
+    }
+}
+
+impl<I:TimeConvexIterator> TimeConvexIterator for TimeValueTranslIter<I>
+    where
+        I::Item: Add<TimeValue,Output=I::Item>
+{
+    type TimePoint = I::TimePoint;
+}
+
+
+
+impl<I:TimeConvexIterator> TimeTranslation<&TimeSpan> for I
+    where
+        I::Item: Add<TimeSpan,Output=I::Item>
+{
+    type Output = crate::iter::intoiter::IntoConvexIter<I::TimePoint,std::vec::IntoIter<TimeInterval<I::TimePoint>>>;
+
+    fn translate(self, ts: &TimeSpan) -> Self::Output {
+        let tw = self.fold(TimeSet::<I::TimePoint>::empty(), |r,tw| r | (tw + *ts));
+        tw.into_iter()
+    }
+}
+/*
 impl<T:TimePoint> TimeTranslation<TimeValue> for TimeSet<T>
     where
         TimeInterval<T>:TimeTranslation<TimeValue,Output=TimeInterval<T>>

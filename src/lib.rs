@@ -21,7 +21,7 @@
 //! The module [`graph`] deals with time constraints graph and mainly provides two structures:
 //! * [`graph::TimeGraph`]: the time constraints graph, a time constraint is defined as an interval
 //! of duration between two instants, a graph could be considered as a collection of time constraints
-//! * [`graph::Agenda`]: the agenda maintains a set of slots (one for each instant) according to
+//! * [`graph::TimeScheduler`]: the scheduler maintains a set of slots (one for each instant) according to
 //!   its time graph
 //!
 //! Any modification of constraints are automatically propagated (see [`graph::TimeGraph`] for more
@@ -37,7 +37,7 @@ mod ops;
 mod relns;
 pub use relns::*;
 
-//pub mod graph;
+pub mod graph;
 
 
 use std::fmt::Debug;

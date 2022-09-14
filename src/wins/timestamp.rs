@@ -110,7 +110,7 @@ impl TimeBounds for Timestamp
     #[inline] fn upper_bound(&self) -> Self::TimePoint { *self }
 }
 
-impl TimeConvex for Timestamp {}
+impl TimeConvex for Timestamp { }
 
 
 impl Timestamped for Timestamp

@@ -68,6 +68,11 @@ pub trait TimeBounds {
 /// This traits describes the structure of the time window.
 pub trait TimeWindow : TimeBounds {
 
+    #[inline]
+    fn is_all(&self) -> bool {
+        self.is_convex() && !self.is_low_bounded() && !self.is_up_bounded()
+    }
+
     /// Checks if this time window is an interval
     ///
     /// Note that the empty set is convex.
@@ -103,9 +108,7 @@ pub trait TimeWindow : TimeBounds {
 /// that it is a time interval (bounded or not) or an empty set.
 ///
 /// Some computations will be optimized.
-pub trait TimeConvex : TimeBounds+Sized+Into<TimeInterval<Self::TimePoint>> {
-
-}
+pub trait TimeConvex : TimeBounds+Sized+Into<TimeInterval<Self::TimePoint>> { }
 
 impl<TW:TimeBounds+Into<TimeInterval<TW::TimePoint>>> TimeWindow for TW {
 

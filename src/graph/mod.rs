@@ -37,7 +37,7 @@
 /// stable. Another one is proposed to do the propagation is O(n<sup>3</sup>) where
 /// n is the size of the graph \[1\].
 ///
-/// ## Incremental Propagation Algorithm</h3>
+/// ## Incremental Propagation Algorithm
 /// In order to provide a useful feedback to the user, we use a derivated algorithm
 /// which propagate the constraints one by one, with a complexity of O(n<sup>2</sup>) at each step
 /// (each added constraint by calling [`Self::add_time_constraint`]).
@@ -68,121 +68,100 @@
 #[embed_doc_image("timegraph-2", "images/timegraph-2.png")]
 #[embed_doc_image("timegraph-3", "images/timegraph-3.png")]
 
-
 #[derive(Clone)]
 pub struct TimeGraph {
-    size : u32,
-    data : Vec<TimeValue>
+    size : Instant,
+    data : Vec<TimeValue>,
+    // to make growing easier (i.e. without remaining the matrix order)
+    // the matrix in encoded in a vector as follows:
+    //
+    //   0 |  3 |  8 | 15
+    //   1 |  2 |  7 | 14
+    //   4 |  5 |  6 | 13
+    //   9 | 10 | 11 | 12
+    //  16 | 17 ...
+    //
+    //  [i,j] = i*i + j  (if i >= j)
+    //  [i,j] = j*j + 2j - i (if i <= j)
 }
 
-pub struct TimeConstraint<'a> {
-    start: u32,
-    end: u32,
-    constraint: &'a mut TimeGraph
-}
-
-/// Result of a propagation operation inside
-/// a time constraint graph (or an agenda).
-#[derive(Clone,Copy,Debug)]
-pub enum TimePropagation {
-    /// The propagation is done without modifying the initial data
-    ///
-    /// Typically, it is the case when we attempt to add a new time
-    /// constraint which is always ensured by the previous ones.
-    Unchanged,
-
-    /// The propagation is done and modifies the initial data
-    Propagated,
-}
-
-#[derive(Clone,Copy,Debug)]
-pub enum TimeInconsistencyError {
-    /// The propagation failed but the original data are restored
-    Recovered,
-
-    /// The propagation failed and the original data are corrupted
-    ///
-    /// Using corrupted data could lead to unexpected behavior (basically,
-    /// wrong further time propagation)
-    Fatal
-}
-
-mod agenda;
-pub use agenda::*;
 
 use std::fmt;
-use std::iter::FusedIterator;
 use super::*;
-use std::cmp::{min, max, Ordering};
-use std::error::Error;
 use embed_doc_image::embed_doc_image;
 
 
-pub type TimePropagationResult = Result<TimePropagation,TimeInconsistencyError>;
+
+mod constraints;
+mod propagation;
+mod storage;
+mod scheduler;
+pub use scheduler::TimeScheduler;
 
 
+/// Index of an instant in the graph
+pub type Instant = u32;
 
-impl TimeGraph {
-    
-    /// Create a new unconstrained graph
-    ///
-    /// The graph contains the specified number of instants (nodes)
-    /// and all the constraints are set to ]-oo,+oo[.
-    pub fn with_size(size:u32) -> TimeGraph
-    {
-        let mut data = Vec::with_capacity(size as usize * size as usize);
-        data.resize(size as usize * size as usize, -TimeValue::INFINITE);
-        (0..size as usize).for_each(|x| data[(x*size as usize)+x] = Default::default());
-        TimeGraph { size, data }
-    }
-    
-    /// Number of nodes of the graph
-    #[inline]
-    pub fn size(&self) -> u32 { self.size }
-    
-    #[inline]
-    pub fn lower_constraint(&self, i:u32, j:u32) -> TimeValue 
-    {
-        self.data[(i*self.size+j) as usize] 
-    }
-    
-    #[inline]
-    pub fn upper_constraint(&self, i:u32, j:u32) -> TimeValue
-    {
-        - self.lower_constraint(j, i)
-    }
+pub trait TimeConstraint: TimeConvex<TimePoint=TimeValue> {
+    /// The first instant of the constraint
+    fn from(&self) -> Instant;
+    /// The second instant of the constraint
+    fn to(&self) -> Instant;
 
-    #[inline]
-    pub fn constraint(&self, i:u32, j:u32) -> TimeSpan
+    fn equiv<K: TimeConstraint>(&self, k: &K) -> bool
     {
-        TimeSpan {
-            lower: self.lower_constraint(i, j),
-            upper: self.upper_constraint(i, j)
+        if self.from() == k.from() {
+            self.to() == k.to() && self.lower_bound() == k.lower_bound() && self.upper_bound() == k.upper_bound()
+        } else if self.from() == k.to() {
+            self.to() == k.from() && self.lower_bound() == -k.upper_bound() && self.upper_bound() == -k.lower_bound()
+        } else {
+            false
         }
     }
+}
 
+impl<K:TimeConstraint> From<K> for TimeSpan
+{
     #[inline]
-    pub unsafe fn lower_constraint_unchecked(&self, i:u32, j:u32) -> TimeValue
-    {
-        *self.data.get_unchecked((i*self.size+j) as usize)
+    fn from(k: K) -> Self {
+        TimeInterval { lower: k.lower_bound(), upper: k.upper_bound() }
     }
+}
 
+
+impl<TW> TimeConstraint for ((Instant, Instant), TW)
+    where
+        TW:TimeConvex<TimePoint=TimeValue>
+{
     #[inline]
-    pub unsafe fn upper_constraint_unchecked(&self, i:u32, j:u32) -> TimeValue
-    {
-        - self.lower_constraint_unchecked(j, i)
-    }
-
+    fn from(&self) -> Instant { self.0.0 }
     #[inline]
-    pub unsafe fn constraint_unchecked(&self, i:u32, j:u32) -> TimeSpan
-    {
-        TimeSpan {
-            lower: self.lower_constraint_unchecked(i, j),
-            upper: self.upper_constraint_unchecked(i, j)
-        }
-    }
+    fn to(&self) -> Instant { self.0.1 }
+}
 
-    pub fn constraints_iter<'a>(&'a self, i:u32) -> impl 'a + Iterator<Item=TimeSpan> + ExactSizeIterator + FusedIterator
+
+impl<TW> TimeConvex for ((Instant, Instant), TW)
+    where
+        TW:TimeConvex<TimePoint=TimeValue>
+{
+}
+
+impl<TW> TimeBounds for ((Instant, Instant), TW)
+    where
+        TW:TimeBounds<TimePoint=TimeValue>
+{
+    type TimePoint = TimeValue;
+    #[inline] fn is_empty(&self) -> bool { self.1.is_empty() }
+    #[inline] fn is_low_bounded(&self) -> bool { self.1.is_low_bounded() }
+    #[inline] fn is_up_bounded(&self) -> bool { self.1.is_up_bounded() }
+    #[inline] fn lower_bound(&self) -> TimeValue { self.1.lower_bound() }
+    #[inline] fn upper_bound(&self) -> TimeValue { self.1.upper_bound() }
+}
+
+/*
+
+
+    pub fn constraints<'a>(&'a self, i:Instant) -> impl 'a + Iterator<Item=TimeSpan> + ExactSizeIterator + FusedIterator
     {
         struct Iter<'a>{lower:usize,upper:usize,size:usize,graph:&'a [TimeValue]}
         impl Iterator for Iter<'_> {
@@ -220,62 +199,38 @@ impl TimeGraph {
     }
 
     #[inline]
-    pub fn time_cmp(&self, i:u32, j:u32) -> Option<Ordering>
+    pub fn time_cmp(&self, i:Instant, j:Instant) -> Option<Ordering>
     {
-        let ij = self.lower_constraint(i,j);
-        if ij.is_strictly_positive() {
-            Some(Ordering::Less)
-        } else {
-            let ji = self.lower_constraint(j,i);
-            if ij.is_strictly_positive() {
+        let k = self.constraint(i,j);
+        if k.lower_bound().is_strictly_positive() {
+                Some(Ordering::Less)
+            } else if k.upper_bound().is_strictly_negative() {
                 Some(Ordering::Greater)
+            } else if k.is_singleton() {
+                debug_assert_eq!(k.lower_bound(), TimeValue::default());
+                Some(Ordering::Equal)
             } else {
-                if ij.is_zero() && ji.is_zero() {
-                    Some(Ordering::Equal)
-                } else {
-                    None
-                }
+                None
             }
         }
     }
-    
-    /// Resize the graph
-    ///
-    /// If the new size is smaller than the current one,
-    /// they the related constraint are also removed
-    /// buth the impact of their propagation remains.
-    pub fn resize(&mut self, size:u32)
-    {
-        let mut g = TimeGraph::with_size(size);
-        if self.size != g.size {
-            let size:u32= min(self.size,g.size);
-            for i in 0..size {
-                for j in 0..size {
-                    g.data[(i*g.size+j) as usize] = self.lower_constraint(i,j);
-                }
-            }
-            *self = g;
-        }
-    }
-    
+
     // Checks if two instants are necessarily distinct.
     #[inline]
-    pub fn are_distinct(&self, i:u32, j:u32) -> bool
+    pub fn are_distinct(&self, i:Instant, j:Instant) -> bool
     {
-        if self.lower_constraint(i,j).is_strictly_positive() {
-            self.lower_constraint(j,i).is_strictly_negative()
-        } else if self.lower_constraint(i,j).is_strictly_negative() {
-            self.lower_constraint(j,i).is_strictly_positive()
-        } else {
-            false
-        }
+        self.constraint(i,j)
+            .map(|k| {
+                k.lower_bound().is_strictly_positive() || k.upper_bound().is_strictly_negative()
+            })
+            .unwrap_or(false)
     }
 
 
     
-    pub fn add_time_constraint<TW>(&mut self, (i,j):(u32,u32), k: TW) -> TimePropagationResult
+    pub fn add_time_constraint<TW>(&mut self, (i,j):(Instant,Instant), k: TW) -> TimePropagationResult
         where
-            TW:TimeConvex+TimeWindow<TimePoint=TimeValue>
+            TW:TimeConvex<TimePoint=TimeValue>
     {
         if self.size <= max(i,j) {
             // si i ou j n'était pas dans le graphe
@@ -285,10 +240,10 @@ impl TimeGraph {
             *self.get_mut(j,i) = -k.upper_bound();
             Ok(TimePropagation::Propagated)
         } else {
-            let lower = self.lower_constraint(i,j);
+            let lower = unsafe { self.lower_constraint_unchecked(i,j) };
             if k.lower_bound() <= lower {
                 //- la contrainte basse ne change pas
-                let upper = -self.lower_constraint(j,i);
+                let upper = - unsafe { self.lower_constraint_unchecked(j,i) };
                 if k.upper_bound() >= upper {
                     //- la contrainte sup. ne change pas non plus
                     Ok(TimePropagation::Unchanged)
@@ -303,7 +258,7 @@ impl TimeGraph {
                 }
             } else {
                 //- la contrainte basse change
-                let upper = -self.lower_constraint(j,i);
+                let upper = - unsafe { self.lower_constraint_unchecked(j,i) };
                 if (k.lower_bound() > upper) || (k.lower_bound() < lower) {
                     //- la contrainte est inconsistante
                     Err(TimeInconsistencyError::Recovered)
@@ -330,17 +285,17 @@ impl TimeGraph {
     /// If the new constraint is consistent, then it will be propagated.
     /// true is returned if something change and false is returned if
     /// nothing changed (i.e. if the constraint was already deduced the graph)
-    pub fn add_lower_time_constraint(&mut self, i:u32, j:u32, lower:TimeValue) -> TimePropagationResult
+    pub fn add_lower_time_constraint(&mut self, i:Instant, j:Instant, lower:TimeValue) -> TimePropagationResult
     {
         if self.size <= max(i,j) {
             self.resize(max(i,j)+1);
             *self.get_mut(i,j) = lower;
             Ok(TimePropagation::Propagated)
         } else {
-            if lower <= self.lower_constraint(i,j) {
+            if lower <= unsafe { self.lower_constraint_unchecked(i,j) } {
                 //- la contrainte basse ne change pas
                 Ok(TimePropagation::Unchanged)
-            } else if lower > -self.lower_constraint(j,i) {
+            } else if lower > unsafe { -self.lower_constraint_unchecked(j,i) } {
                 //- la contrainte sup est inconsistante
                 Err(TimeInconsistencyError::Recovered)
             } else {
@@ -353,30 +308,30 @@ impl TimeGraph {
     }
     
     #[inline]
-    pub fn add_upper_time_constraint(&mut self, i:u32, j:u32, k:TimeValue) -> TimePropagationResult {
+    pub fn add_upper_time_constraint(&mut self, i:Instant, j:Instant, k:TimeValue) -> TimePropagationResult {
         self.add_lower_time_constraint(j, i, -k)
     }
 
     #[inline]
-    fn get_mut(&mut self, i:u32, j:u32) -> &mut TimeValue
+    fn get_mut(&mut self, i:Instant, j:Instant) -> &mut TimeValue
     {
         &mut (self.data[(i*self.size+j) as usize])
     }
 
     #[inline]
-    unsafe fn get_unchecked(&self, i:u32, j:u32) -> &TimeValue
+    unsafe fn get_unchecked(&self, i:Instant, j:Instant) -> &TimeValue
     {
         self.data.get_unchecked((i*self.size+j) as usize)
     }
 
     #[inline]
-    unsafe fn get_unchecked_mut(&mut self, i:u32, j:u32) -> &mut TimeValue
+    unsafe fn get_unchecked_mut(&mut self, i:Instant, j:Instant) -> &mut TimeValue
     {
         self.data.get_unchecked_mut((i*self.size+j) as usize)
     }
 
 
-    fn propagate_lower_bound(&mut self, io:u32, jo:u32)
+    fn propagate_lower_bound(&mut self, io:Instant, jo:Instant)
     {
         //- propagation incrementale
         //- on suppose que la table des contraintes est a jour
@@ -446,7 +401,7 @@ impl TimeGraph {
     pub fn add_time_constraints<TW,I>(&mut self, iter:I) -> TimePropagationResult
         where
             TW:TimeConvex+TimeWindow<TimePoint=TimeValue>,
-            I: IntoIterator<Item=((u32, u32), TW)>
+            I: IntoIterator<Item=((Instant, Instant), TW)>
     {
         iter.into_iter()
             .for_each(|((i,j), tw)| {
@@ -494,10 +449,12 @@ impl TimeGraph {
     }
 }
 
-/*
-impl FromIterator<TimeConstraint> for TimeGraph 
+
+impl<TW> FromIterator<((Instant,Instant),TW> for TimeGraph
+    where
+        TW: TimeConvex<TimePoint=TimeValue>
 {
-    fn from_iter<I: IntoIterator<Item=TimeConstraint>>(iter: I) -> TimeGraph 
+    fn from_iter<I: IntoIterator<Item=((Instant,Instant))>>(iter: I) -> TimeGraph
     {
         let mut graph = TimeGraph::with_size(32);
         
@@ -514,7 +471,7 @@ impl FromIterator<TimeConstraint> for TimeGraph
         }
     }
 }
-*/
+
 
 
 
@@ -525,7 +482,7 @@ impl fmt::Display for TimeGraph
     {
         for i in 0..self.size {
             for j in 0..i {
-                let k = self.constraint(i, j);
+                let k : TimeInterval<_> = self.constraint(i, j).unwrap().into();
                 if k != TimeInterval::all() {
                     if k.upper_bound().is_positive() {
                         writeln!(formatter,"t{} - t{} in {};", j, i, k)?;
@@ -547,9 +504,9 @@ impl fmt::Debug for TimeGraph
             writeln!(formatter, "[]")
         } else {
             for i in 0..self.size {
-                write!(formatter,"[{:?}",self.lower_constraint(i, 0))?;
+                write!(formatter,"[{:?}", unsafe { self.lower_constraint_unchecked(i, 0) })?;
                 for j in 1..self.size {
-                    write!(formatter,",{:?}",self.lower_constraint(i, j))?;
+                    write!(formatter,",{:?}", unsafe { self.lower_constraint_unchecked(i, j) })?;
                 }
                 writeln!(formatter,"]")?;
             }
@@ -559,15 +516,6 @@ impl fmt::Debug for TimeGraph
 }
 
 
-impl Error for TimeInconsistencyError {
-
-}
-
-impl fmt::Display for TimeInconsistencyError {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("inconsistency detected when propagating time constraints")
-    }
-}
 
 #[cfg(test)]
 pub mod tests {
@@ -594,3 +542,4 @@ pub mod tests {
         Ok(())
     }
 }
+*/

@@ -32,10 +32,14 @@ impl TimeSlot {
 
 impl<T:TimePoint> TimeInterval<T>
 {
+    /// Interval is empty if the first bound is greater than the second one.
     #[inline]
-    pub fn new(lower: T, upper: T) -> Self {
-        if (lower <= upper) && !lower.is_future_infinite() && !upper.is_past_infinite() {
+    pub fn new(lower: T, upper: T) -> Self
+    {
+        if lower < upper {
             Self { lower, upper }
+        } else if lower == upper {
+            Self::singleton(lower)
         } else {
             Self::empty()
         }
@@ -43,11 +47,18 @@ impl<T:TimePoint> TimeInterval<T>
 
     #[inline]
     pub fn empty() -> Self {
-        Self { lower: T::INFINITE, upper: -T::INFINITE }
+        Self {
+            lower: T::INFINITE,
+            upper: -T::INFINITE
+        }
     }
 
+    /// Returns `[t,t]`
+    ///
+    /// Interval is empty if `t` is not finite
     #[inline]
-    pub fn singleton(t: T) -> Self {
+    pub fn singleton(t: T) -> Self
+    {
         if t.is_finite() {
             Self { lower: t, upper: t }
         } else {
@@ -55,6 +66,9 @@ impl<T:TimePoint> TimeInterval<T>
         }
     }
 
+    /// Returns `[t,+oo[`
+    ///
+    /// Interval is empty if `t = +oo`
     #[inline]
     pub fn after(t: T) -> Self
     {
@@ -65,6 +79,9 @@ impl<T:TimePoint> TimeInterval<T>
         }
     }
 
+    /// Returns `]-oo,t]`
+    ///
+    /// Interval is empty if `t = -oo`
     #[inline]
     pub fn before(t: T) -> Self
     {
@@ -75,8 +92,10 @@ impl<T:TimePoint> TimeInterval<T>
         }
     }
 
+    /// Returns `]-oo,+oo[`
     #[inline]
-    pub fn all() -> Self {
+    pub fn all() -> Self
+    {
         Self { lower: -T::INFINITE, upper: T::INFINITE }
     }
 
@@ -134,10 +153,6 @@ impl<T:TimePoint> TimeInterval<T>
 
 }
 
-impl<T:TimePoint> From<T> for TimeInterval<T> {
-    #[inline] fn from(t: T) -> Self { TimeInterval::singleton(t) }
-}
-
 
 impl<T:TimePoint> TimeBounds for TimeInterval<T>
 {
@@ -152,17 +167,8 @@ impl<T:TimePoint> TimeBounds for TimeInterval<T>
 }
 
 
-impl<T:TimePoint> TimeConvex for TimeInterval<T>
-{
+impl<T:TimePoint> TimeConvex for TimeInterval<T> { }
 
-}
-/*
-impl<T:TimePoint> TimeConvexIterator<T> for TimeInterval<T>
-{
-    #[inline] fn convex_iter(&self) -> Self::Iter { std::iter::once(*self) }
-    type Iter = std::iter::Once<Self>;
-}
-*/
 
 impl<T:TimePoint+fmt::Debug> fmt::Debug for TimeInterval<T>
 {
@@ -219,3 +225,8 @@ impl<T:TimePoint> Neg for TimeInterval<T>
     }
 }
 
+
+
+impl<T:TimePoint> From<T> for TimeInterval<T> {
+    #[inline] fn from(t: T) -> Self { TimeInterval::singleton(t) }
+}

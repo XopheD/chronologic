@@ -18,8 +18,9 @@ pub type TimeSlots = TimeSet<Timestamp>;
 /// The inner list of time intervals is chronological sorted
 /// and all the inner intervals are disjoint. If, when added,
 /// two intervals overlaps, then they are merged.
-#[derive(Clone, Eq, Hash, Default)]
+#[derive(Clone, Eq, Hash)]
 pub struct TimeSet<T:TimePoint>(pub(crate) Vec<TimeInterval<T>>);
+
 
 impl<T:TimePoint> TimeSet<T>
 {
@@ -109,7 +110,6 @@ impl<T:TimePoint> TimeWindow for TimeSet<T>
         crate::iter::intoiter::IntoConvexIter(self.0.clone().into_iter())
     }
 }
-
 
 impl<T:TimePoint> Neg for TimeSet<T>
 {
