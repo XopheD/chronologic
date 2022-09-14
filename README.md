@@ -30,7 +30,7 @@ I.into_iter().union(J).intersection(K).is_none()
  The module [`graph`] deals with time constraints graph and mainly provides two structures:
  * [`graph::TimeGraph`]: the time constraints graph, a time constraint is defined as an interval
  of duration between two instants, a graph could be considered as a collection of time constraints
- * [`graph::Agenda`]: the agenda maintains a set of slots (one for each instant) according to
+ * [`graph::TimeScheduler`]: the scheduler maintains a set of slots (one for each instant) according to
    its time graph
 
 ## Time constraint management
