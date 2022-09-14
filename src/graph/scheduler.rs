@@ -35,6 +35,9 @@ impl TimeScheduler<'_> {
     #[inline]
     pub fn constraints(&self) -> &'_ TimeGraph { self.constraints }
 
+    #[inline]
+    pub fn scheduling(&self, i:Instant) -> Option<&TimeSlots> { self.schedule.get(i as usize) }
+
     /// The minimum of the upper bounds of each scheduling
     pub fn latest_beginning(&self) -> Timestamp {
         self.schedule.iter().map(|i| i.upper_bound()).min().unwrap()

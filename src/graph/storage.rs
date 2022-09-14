@@ -90,7 +90,7 @@ impl TimeGraph {
     }
 
     #[inline]
-    pub fn timespan(&self, i: Instant, j:Instant) -> TimeSpan
+    pub fn timespan(&self, i:Instant, j:Instant) -> TimeSpan
     {
         if i >= j {
             if i >= self.size() {
