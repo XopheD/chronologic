@@ -52,6 +52,8 @@ impl<T:TimePoint> TimeSet<T>
     #[inline]
     pub fn empty() -> Self { Self(vec![]) }
 
+    #[inline]
+    pub fn shrink_to_fit(&mut self) { self.0.shrink_to_fit() }
 }
 
 
