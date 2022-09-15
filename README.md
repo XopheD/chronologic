@@ -6,6 +6,9 @@
  maintain an agenda of all the possible dates consistent
  with the user constraints.
 
+It is designed to manage efficiently thousands of instants
+in order to be used, for instance, for planning or sheduling problems.
+
  ## Time structures
  Several time structures (interval, sets) are provided
  to make easier time manipulation.

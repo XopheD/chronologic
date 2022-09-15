@@ -7,7 +7,7 @@ use crate::iter::*;
 pub trait TimeTranslation<TW>: TimeConvexIterator
 {
     type Output:TimeConvexIterator<TimePoint=Self::TimePoint>;
-    fn translate(self, tw: TW) -> Self::Output;
+    fn translation(self, tw: TW) -> Self::Output;
 }
 
 
@@ -17,7 +17,7 @@ impl<I:TimeConvexIterator> TimeTranslation<TimeValue> for I
 {
     type Output = TimeValueTranslIter<I>;
 
-    fn translate(self, t: TimeValue) -> Self::Output {
+    fn translation(self, t: TimeValue) -> Self::Output {
         TimeValueTranslIter{ t, iter: self }
     }
 }
@@ -54,7 +54,7 @@ impl<I:TimeConvexIterator> TimeTranslation<&TimeSpan> for I
 {
     type Output = crate::iter::intoiter::IntoConvexIter<I::TimePoint,std::vec::IntoIter<TimeInterval<I::TimePoint>>>;
 
-    fn translate(self, ts: &TimeSpan) -> Self::Output {
+    fn translation(self, ts: &TimeSpan) -> Self::Output {
         let tw = self.fold(TimeSet::<I::TimePoint>::empty(), |r,tw| r | (tw + *ts));
         tw.into_iter()
     }

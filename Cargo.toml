@@ -1,10 +1,10 @@
 [package]
 name = "chronologic"
-version = "0.6.2"
+version = "0.6.3"
 edition = "2021"
 authors = ["Xophe <christophe.dousson@me.com>"]
 license = "MIT"
-description = "Utilities for time constraint reasoning"
+description = "Time constraint reasoning (scheduling...)"
 repository = "https://github.com/XopheD/chronologic"
 documentation = "https://docs.rs/chronologic"
 keywords = ["time","constraint","reasoning"]

@@ -132,7 +132,7 @@ impl TimeScheduler<'_> {
                         self.schedule.get_unchecked(j).iter()
                             .intersection(self.schedule.get_unchecked(i as usize)
                                 .iter()
-                                .translate(&TimeInterval::from(k)))
+                                .translation(&TimeInterval::from(k)))
                             .collect();
                 });
         }

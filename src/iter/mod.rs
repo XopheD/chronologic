@@ -4,12 +4,16 @@ mod compl;
 mod intersect;
 mod union;
 mod transl;
+mod scaling;
+mod excl;
 
 use crate::*;
 pub use compl::{TimeComplementary,IterComplementary};
 pub use union::{TimeUnion,IterUnion};
 pub use intersect::{TimeIntersection,IterIntersection};
 pub use transl::TimeTranslation;
+pub use scaling::TimeScaling;
+pub use excl::TimeExclusion;
 
 /// An iterator over sorted and distinct time intervals
 ///
