@@ -146,24 +146,45 @@ impl fmt::Debug for TimeScheduler<'_> {
     }
 }
 
+
+impl fmt::Display for TimeScheduler<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.schedule.iter().enumerate()
+            .try_for_each(|(i,tw)| writeln!(f, "t{} in {}", i, tw))
+    }
+}
+
+impl TimeFormat for TimeScheduler<'_>
+{
+    fn format(&self, timefmt: &str) -> String {
+        self.schedule.iter()
+            .enumerate()
+            .map(|(i,tw)| format!("t{} in {}\n", i,tw.format(timefmt)))
+            .reduce(|s1,s2| s1 + &s2)
+            .unwrap_or("empty time scheduler (no instant)".to_string())
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use crate::graph::*;
+    use crate::graph::propagation::TimePropagation::*;
     use crate::graph::TimeScheduler;
 
     #[test]
-    fn propagation() -> Result<(),Option<TimeGraph>>
+    fn propagation()
     {
         let mut g = TimeGraph::with_size(3);
-        g.propagate(((0,1), TimeValue::from_ticks(0) ..= TimeValue::from_ticks(5)));
-        g.propagate(((1,2), TimeValue::from_ticks(7) ..= TimeValue::from_ticks(10)));
-        g.propagate(((0,2), TimeValue::from_ticks(10) ..= TimeValue::from_ticks(25)));
+        assert_eq!(Ok(Propagated), g.propagate(((0,1), TimeValue::from_hours(0) ..= TimeValue::from_hours(5))));
+        assert_eq!(Ok(Propagated), g.propagate(((1,2), TimeValue::from_hours(7) ..= TimeValue::from_hours(10))));
+        assert_eq!(Ok(Propagated), g.propagate(((0,2), TimeValue::from_hours(10) ..= TimeValue::from_hours(25))));
+
+        // this constraint is deduced from previous one, so Unchanged result is expected
+        assert_eq!(Ok(Unchanged), g.propagate(((0,2), TimeValue::from_hours(0) ..= TimeValue::from_hours(15))));
 
         let mut agenda = TimeScheduler::new(&g);
-        agenda.set_startline(Timestamp::default());
-        agenda.set_deadline(Timestamp::from_origin(TimeValue::from_ticks(100)));
+        assert_eq!( Ok(Propagated), agenda.set_startline(Timestamp::default()));
+        assert_eq!( Ok(Propagated), agenda.set_deadline(Timestamp::from_origin(TimeValue::from_days(2))));
 
-        dbg!(agenda);
-        Ok(())
     }
 }

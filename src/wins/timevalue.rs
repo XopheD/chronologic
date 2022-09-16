@@ -1,6 +1,5 @@
 use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 use std::time;
-use std::fmt;
 use chrono::Duration;
 use crate::*;
 
@@ -46,6 +45,12 @@ impl TimeValue {
             Self((sec<<SUBSEC_BITLEN) + ((frac << SUBSEC_BITLEN)/unit))
         }
     }
+
+    #[inline]
+    pub fn from_years(years:i64) -> Self { TimeValue::from_months(12*years) }
+
+    #[inline]
+    pub fn from_months(months:i64) -> Self { TimeValue::from_secs(146097*24*3600/400/12*months) }
 
     #[inline]
     pub fn from_weeks(weeks:i64) -> Self { TimeValue::from_days(7*weeks) }
@@ -229,47 +234,6 @@ impl Neg for TimeValue
 }
 
 
-impl fmt::Debug for TimeValue
-{
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
-    {
-        if self.0 >= 0 {
-            if self.is_future_infinite() {
-                write!(formatter, "+oo")
-            } else {
-                write!(formatter, "{:?}", self.0)
-            }
-        } else {
-            if self.is_past_infinite() {
-                write!(formatter, "-oo")
-            } else {
-                write!(formatter, "{:?}", self.0)
-            }
-        }
-    }
-}
-
-
-impl fmt::Display for TimeValue
-{
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
-    {
-        if self.0 >= 0 {
-            if self.is_future_infinite() {
-                write!(formatter, "+oo")
-            } else {
-                write!(formatter, "{:?}", self.to_duration().to_std().unwrap())
-            }
-        } else {
-            if self.is_past_infinite() {
-                write!(formatter, "-oo")
-            } else {
-                write!(formatter, "-{:?}", (-*self).to_duration().to_std().unwrap())
-            }
-        }
-    }
-}
-
 impl TimeBounds for TimeValue
 {
     type TimePoint = Self;
@@ -318,3 +282,4 @@ impl Sub for TimeValue {
 impl SubAssign for TimeValue {
     #[inline] fn sub_assign(&mut self, v: TimeValue) { *self += -v }
 }
+

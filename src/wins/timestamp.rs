@@ -1,6 +1,5 @@
 use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
-use std::fmt;
 use std::time::SystemTime;
 
 use crate::*;
@@ -13,34 +12,6 @@ pub struct Timestamp(pub(crate) TimeValue);
 pub trait Timestamped {
     /// Gets the timestamp
     fn timestamp(&self) -> Timestamp;
-}
-
-impl fmt::Debug for Timestamp
-{
-    #[inline]
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(formatter, "t={:?}", self.0)
-    }
-}
-
-impl fmt::Display for Timestamp
-{
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
-    {
-        if self.0.is_positive() {
-            if self.is_future_infinite() {
-                write!(formatter, "+oo")
-            } else {
-                write!(formatter, "{}", self.to_datetime())
-            }
-        } else {
-            if self.is_past_infinite() {
-                write!(formatter, "-oo")
-            } else {
-                write!(formatter, "1970-01-01 00:00:00 UTC - {:?}", -self.0)
-            }
-        }
-    }
 }
 
 impl Timestamp {
@@ -135,6 +106,7 @@ impl From<NaiveDateTime> for Timestamp
         Self(TimeValue::from_nanos(t.timestamp_nanos()))
     }
 }
+
 
 impl<Tz:TimeZone> From<DateTime<Tz>> for Timestamp
 {

@@ -180,6 +180,7 @@ impl fmt::Display for TimeGraph {
 #[cfg(test)]
 mod tests {
     use crate::graph::*;
+    use crate::graph::propagation::TimePropagation;
 
     #[test]
     pub fn init()
@@ -196,15 +197,9 @@ mod tests {
       //  println!("{}", graph);
 
         let mut graph2 = TimeGraph::with_size(7);
-        graph2.extend(graph.iter());
-
-
-        dbg!(&graph2);
-        println!("{}", graph2);
+        assert_eq!( Ok(TimePropagation::Propagated), graph2.extend(graph.iter()) );
 
         graph2.shrink_to_fit();
 
-        dbg!(&graph2);
-        println!("{}", graph2);
     }
 }

@@ -32,16 +32,5 @@ mod tests {
         assert!(!tw.contains(&TimeValue::from_ticks(10)));
     }
 
-    #[test]
-    fn contains2()
-    {
-        let t1 = Timestamp::default()+TimeValue::from_ticks(1);
-        let t5 = Timestamp::default()+TimeValue::from_ticks(5);
-        let t10 = Timestamp::default()+TimeValue::from_ticks(10);
-        let tw = !t1 & !t5 & !t10;
-        dbg!(&tw);
-        assert!( !tw.contains(&t5));
-    }
-
 }
 

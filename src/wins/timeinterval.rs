@@ -1,4 +1,3 @@
-use std::fmt;
 use std::ops::{Add, Neg, Sub};
 use super::*;
 use crate::*;
@@ -169,52 +168,6 @@ impl<T:TimePoint> TimeBounds for TimeInterval<T>
 
 impl<T:TimePoint> TimeConvex for TimeInterval<T> { }
 
-
-impl<T:TimePoint+fmt::Debug> fmt::Debug for TimeInterval<T>
-{
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
-    {
-        if self.is_low_bounded() {
-            if self.is_up_bounded() {
-                if self.lower == self.upper {
-                    write!(formatter, "{{{:?}}}", self.lower)
-                } else {
-                    write!(formatter, "[{:?},{:?}]", self.lower, self.upper)
-                }
-            } else {
-                write!(formatter, "[{:?},+oo[", self.lower)
-            }
-        } else {
-            if self.is_up_bounded() {
-                write!(formatter, "]-oo,{:?}]", self.upper)
-            } else {
-                write!(formatter, "]-oo,+oo[")
-            }
-        }
-    }
-}
-
-
-impl<T:TimePoint+fmt::Display> fmt::Display for TimeInterval<T>
-{
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
-    {
-        if self.is_singleton() {
-            write!(formatter, "{{{}}}", self.lower)
-
-        } else if self.is_low_bounded() {
-            if self.is_up_bounded() {
-                write!(formatter, "[{},{}]", self.lower, self.upper)
-            } else {
-                write!(formatter, "[{},+oo[", self.lower)
-            }
-        } else if self.is_up_bounded() {
-            write!(formatter, "]-oo,{}]", self.upper)
-        } else {
-            write!(formatter, "]-oo,+oo[")
-        }
-    }
-}
 
 impl<T:TimePoint> Neg for TimeInterval<T>
 {

@@ -8,7 +8,7 @@ pub type TimePropagationResult = Result<TimePropagation,TimeInconsistencyError>;
 
 /// Result of a propagation operation inside
 /// a constraint set (graph or agenda).
-#[derive(Clone,Copy,Debug)]
+#[derive(Clone,Copy,Debug,PartialEq,Eq)]
 pub enum TimePropagation {
     /// The propagation is done without modifying the initial data
     ///
@@ -20,7 +20,7 @@ pub enum TimePropagation {
     Propagated,
 }
 
-#[derive(Clone,Copy,Debug)]
+#[derive(Clone,Copy,Debug,PartialEq,Eq)]
 pub enum TimeInconsistencyError {
     /// The propagation failed but the original data are restored
     /// so the graph remains unchanged.

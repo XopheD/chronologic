@@ -2,11 +2,13 @@ mod timestamp;
 mod timevalue;
 mod timeinterval;
 mod timeset;
+mod format;
 
 pub use timevalue::TimeValue;
 pub use timestamp::{Timestamp,Timestamped};
 pub use timeinterval::*;
 pub use timeset::*;
+pub use format::TimeFormat;
 use crate::iter::TimeConvexIterator;
 
 
@@ -107,10 +109,10 @@ pub trait TimeWindow : TimeBounds {
 /// If a time window implements this trait, it is sure
 /// that it is a time interval (bounded or not) or an empty set.
 ///
-/// Some computations will be optimized.
+/// Some computations will be optimized for convex windows.
 pub trait TimeConvex : TimeBounds+Sized+Into<TimeInterval<Self::TimePoint>> { }
 
-impl<TW:TimeBounds+Into<TimeInterval<TW::TimePoint>>> TimeWindow for TW {
+impl<TW:TimeConvex> TimeWindow for TW {
 
     /// Checks if the time window is convex or not
     ///

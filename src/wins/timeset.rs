@@ -1,4 +1,3 @@
-use std::fmt;
 use std::ops::Neg;
 use crate::*;
 use crate::iter::TimeUnion;
@@ -174,33 +173,5 @@ impl<T,TW> From<TW> for TimeSet<T>
     }
 }
 
-
-impl<T:TimePoint+fmt::Debug> fmt::Debug for TimeSet<T>
-{
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
-    {
-        let mut iter = self.0.iter();
-        if let Some(first) = iter.next() {
-            write!(formatter, "{:?}", first)?;
-            iter.try_for_each(|tw| write!(formatter, "U{:?}", tw))
-        } else {
-            write!(formatter, "{{}}") /* empty set */
-        }
-    }
-}
-
-impl<T:TimePoint+fmt::Display> fmt::Display for TimeSet<T>
-{
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
-    {
-        let mut iter = self.0.iter();
-        if let Some(first) = iter.next() {
-            write!(formatter, "{}", first)?;
-            iter.try_for_each(|tw| write!(formatter, "U{}", tw))
-        } else {
-            write!(formatter, "{{}}") /* empty set */
-        }
-    }
-}
 
 

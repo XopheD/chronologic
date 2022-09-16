@@ -2,16 +2,62 @@ use std::ops::{BitAnd, BitAndAssign};
 use crate::*;
 use crate::iter::TimeIntersection;
 
-impl<T:TimePoint,TW> BitAndAssign<TW> for TimeInterval<T>
-    where TW: Into<TimeInterval<T>>
+//------------ TIME POINTS ------------
+
+
+impl<TW> BitAnd<TW> for TimeValue
+    where TW: TimeConvex<TimePoint=TimeValue>
 {
+    type Output = TimeInterval<TimeValue>;
+    #[inline] fn bitand(self, tw: TW) -> Self::Output { TimeInterval::singleton(self).bitand(tw) }
+}
+
+impl<TW> BitAnd<TW> for Timestamp
+    where TW: TimeConvex<TimePoint=Timestamp>
+{
+    type Output = TimeInterval<Timestamp>;
+    #[inline] fn bitand(self, tw: TW) -> Self::Output { TimeInterval::singleton(self).bitand(tw) }
+}
+
+//------------ TIME INTERVALS ------------
+
+impl<T:TimePoint,TW> BitAndAssign<TW> for TimeInterval<T>
+    where TW: TimeConvex<TimePoint=T>
+{
+    #[inline]
     fn bitand_assign(&mut self, tw: TW) {
         *self = self.bitand(tw)
     }
 }
 
+impl<T:TimePoint,TW> BitAnd<TW> for TimeInterval<T>
+    where TW: TimeConvex<TimePoint=T>
+{
+    type Output = Self;
+    #[inline]
+    fn bitand(self, tw: TW) -> Self::Output { (&self).bitand(tw) }
+}
+
+
+impl<T:TimePoint,TW> BitAnd<TW> for &TimeInterval<T>
+    where TW: TimeConvex<TimePoint=T>
+{
+    type Output = TimeInterval<T>;
+
+    #[inline]
+    fn bitand(self, tw: TW) -> Self::Output {
+        let i = tw.into();
+        TimeInterval {
+            lower: self.lower.max(i.lower),
+            upper: self.upper.min(i.upper)
+        }
+    }
+}
+
+//----------------- TIME SETS ------------------------
+
 impl<T:TimePoint,TW> BitAndAssign<TW> for TimeSet<T>
-    where TW: Into<TimeInterval<T>>
+    where TW: TimeConvex<TimePoint=T>
 {
     fn bitand_assign(&mut self, tw: TW) {
         // todo: optimise cloning
@@ -37,13 +83,6 @@ impl<T:TimePoint> BitAndAssign<&Self> for TimeSet<T>
 
 
 
-impl<T:TimePoint,TW> BitAnd<TW> for TimeInterval<T>
-    where TW: Into<TimeInterval<T>>
-{
-    type Output = Self;
-    #[inline] fn bitand(self, tw: TW) -> Self::Output { (&self).bitand(tw) }
-}
-
 
 impl<T:TimePoint> BitAnd<Self> for TimeSet<T>
 {
@@ -58,7 +97,7 @@ impl<T:TimePoint> BitAnd<&Self> for TimeSet<T>
 }
 
 impl<T:TimePoint, TW> BitAnd<TW> for TimeSet<T>
-    where TW: Into<TimeInterval<T>>
+    where TW: TimeConvex<TimePoint=T>
 {
     type Output = Self;
     #[inline] fn bitand(self, tw: TW) -> Self::Output { (&self).bitand(tw) }
@@ -87,7 +126,7 @@ impl<T:TimePoint> BitAnd<Self> for &TimeSet<T>
 
 
 impl<T:TimePoint, TW> BitAnd<TW> for &TimeSet<T>
-    where TW: Into<TimeInterval<T>>
+    where TW: TimeConvex<TimePoint=T>
 {
     type Output = TimeSet<T>;
 
@@ -97,18 +136,3 @@ impl<T:TimePoint, TW> BitAnd<TW> for &TimeSet<T>
     }
 }
 
-
-impl<T:TimePoint,TW> BitAnd<TW> for &TimeInterval<T>
-    where TW: Into<TimeInterval<T>>
-{
-    type Output = TimeInterval<T>;
-
-    #[inline]
-    fn bitand(self, tw: TW) -> Self::Output {
-        let i = tw.into();
-        TimeInterval {
-            lower: self.lower.max(i.lower),
-            upper: self.upper.min(i.upper)
-        }
-    }
-}

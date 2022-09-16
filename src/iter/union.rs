@@ -258,3 +258,5 @@ impl<I,J> FusedIterator for IterUnion<I,J>
     where
         I:TimeConvexIterator,
         J:TimeConvexIterator<TimePoint=I::TimePoint> {}
+
+
