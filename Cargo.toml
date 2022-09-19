@@ -1,6 +1,6 @@
 [package]
 name = "chronologic"
-version = "0.6.4"
+version = "0.6.5"
 edition = "2021"
 authors = ["Xophe <christophe.dousson@me.com>"]
 license = "MIT"

@@ -154,12 +154,12 @@ impl fmt::Display for TimeScheduler<'_> {
     }
 }
 
-impl TimeFormat for TimeScheduler<'_>
+impl TimeSetFormat for TimeScheduler<'_>
 {
-    fn format(&self, timefmt: &str) -> String {
+    fn format_timeset(&self, timefmt: &str) -> String {
         self.schedule.iter()
             .enumerate()
-            .map(|(i,tw)| format!("t{} in {}\n", i,tw.format(timefmt)))
+            .map(|(i,tw)| format!("t{} in {}\n", i,tw.format_timeset(timefmt)))
             .reduce(|s1,s2| s1 + &s2)
             .unwrap_or("empty time scheduler (no instant)".to_string())
     }

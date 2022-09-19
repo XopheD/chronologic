@@ -2,11 +2,11 @@ use std::fmt;
 use crate::*;
 use chrono::format::*;
 
-pub trait TimeFormat {
-    fn format(&self, timefmt: &str) -> String;
+pub trait TimeSetFormat {
+    fn format_timeset(&self, timefmt: &str) -> String;
 }
 
-trait TimePointFormat {
+pub trait TimePointFormat {
     fn format_timepoint(self, timefmt: &str) -> String;
 }
 
@@ -104,10 +104,10 @@ fn format_timeslot<TW:TimeConvex>(tw: &TW, timefmt: &str) -> String
     }
 }
 
-impl<TW:TimeWindow> TimeFormat for TW
+impl<TW:TimeWindow> TimeSetFormat for TW
     where TW::TimePoint: TimePointFormat
 {
-    fn format(&self, timefmt: &str) -> String
+    fn format_timeset(&self, timefmt: &str) -> String
     {
         let mut iter = self.iter();
         if let Some(first) = iter.next() {

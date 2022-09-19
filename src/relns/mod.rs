@@ -30,6 +30,8 @@ mod tests {
         assert!( tw.contains(&TimeValue::from_ticks(100)));
         assert!( tw.contains(&TimeValue::from_ticks(-15)));
         assert!(!tw.contains(&TimeValue::from_ticks(10)));
+
+        println!("{}", Timestamp::now().format_timepoint("%F %C"));
     }
 
 }

@@ -8,7 +8,7 @@ pub use timevalue::TimeValue;
 pub use timestamp::{Timestamp,Timestamped};
 pub use timeinterval::*;
 pub use timeset::*;
-pub use format::TimeFormat;
+pub use format::{TimeSetFormat,TimePointFormat};
 use crate::iter::TimeConvexIterator;
 
 
