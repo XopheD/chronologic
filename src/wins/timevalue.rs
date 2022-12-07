@@ -1,3 +1,4 @@
+use std::iter::Sum;
 use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 use std::time;
 use chrono::Duration;
@@ -283,3 +284,8 @@ impl SubAssign for TimeValue {
     #[inline] fn sub_assign(&mut self, v: TimeValue) { *self += -v }
 }
 
+impl Sum for TimeValue {
+    fn sum<I: Iterator<Item=Self>>(iter: I) -> Self {
+        iter.reduce(|a,b| a+b).unwrap_or(TimeValue::default())
+    }
+}
