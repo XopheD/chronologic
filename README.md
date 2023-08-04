@@ -2,8 +2,8 @@
 
 
  This crate is dedicated to reasoning about time.
- It deals with time constraints, propagate them and
- maintain an agenda of all the possible dates consistent
+ It deals with time constraints, propagates them and
+ maintains an agenda of all the possible dates consistent
  with the user constraints.
 
 It is designed to manage efficiently thousands of instants
