@@ -15,7 +15,7 @@ in order to be used, for instance, for planning or sheduling problems.
 
  This time data defines several operators for union, intersection,
  translation in two ways:
- * by using standard operators (`&` for intersection, `|` for unsion, `+/-` for translation)
+ * by using standard operators (`&` for intersection, `|` for union, `+/-` for translation)
  * by using iterator traits (see module [`iter`]) which allows time manipulation with
    saving memory allocation (no intermediate structures needed)
 
