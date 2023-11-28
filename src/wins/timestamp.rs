@@ -17,8 +17,6 @@ pub trait Timestamped {
 impl Timestamp {
 
     /// Creates a timepoint relative to the origin
-    ///
-    /// Equivalent to `Timestamp::ORIGIN + t`
     #[inline]
     pub fn from_origin(t: TimeValue) -> Self { Self(t) }
 
@@ -26,6 +24,9 @@ impl Timestamp {
     pub fn now() -> Self {
         Self(SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().into())
     }
+
+    #[inline]
+    pub fn elapsed(&self) -> TimeValue { Self::now() - *self }
 
     #[inline]
     pub fn to_datetime(&self) -> DateTime<Utc>
@@ -45,10 +46,7 @@ impl Timestamp {
         Self(self.0.ceil(period))
     }
 
-
     /// Duration since origin
-    ///
-    /// Equivalent to `self - Timestamp::ORIGIN`
     #[inline]
     pub fn since_origin(self) -> TimeValue { self.0 }
 }
