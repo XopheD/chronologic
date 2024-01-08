@@ -2,8 +2,8 @@
 
 
  This crate is dedicated to reasoning about time.
- It deals with time constraints, propagate them and
- maintain an agenda of all the possible dates consistent
+ It deals with time constraints, propagates them and
+ maintains an agenda of all the possible dates consistent
  with the user constraints.
 
 It is designed to manage efficiently thousands of instants
@@ -15,7 +15,7 @@ in order to be used, for instance, for planning or sheduling problems.
 
  This time data defines several operators for union, intersection,
  translation in two ways:
- * by using standard operators (`&` for intersection, `|` for unsion, `+/-` for translation)
+ * by using standard operators (`&` for intersection, `|` for union, `+/-` for translation)
  * by using iterator traits (see module [`iter`]) which allows time manipulation with
    saving memory allocation (no intermediate structures needed)
 
