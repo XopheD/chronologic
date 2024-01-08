@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::ops::{Add, Neg, Sub};
 use super::*;
 use crate::*;
@@ -35,12 +36,10 @@ impl<T:TimePoint> TimeInterval<T>
     #[inline]
     pub fn new(lower: T, upper: T) -> Self
     {
-        if lower < upper {
-            Self { lower, upper }
-        } else if lower == upper {
-            Self::singleton(lower)
-        } else {
-            Self::empty()
+        match lower.cmp(&upper) {
+            Ordering::Less => Self { lower, upper },
+            Ordering::Equal => Self::singleton(lower),
+            Ordering::Greater => Self::empty()
         }
     }
 

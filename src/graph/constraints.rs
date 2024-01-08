@@ -19,7 +19,7 @@ impl TimeGraph {
         if from >= self.size() || to >= self.size() {
             None
         } else {
-            let k = TimeGraphConstraint { from, to, graph: &self };
+            let k = TimeGraphConstraint { from, to, graph: self };
             if k.is_all() { None } else { Some(k) }
         }
     }
@@ -159,16 +159,15 @@ impl<'a> Iterator for TimeConstraintIter<'a> {
                         return None;
                     }
                     self.j = self.i;
-                } else {
-                    if unsafe { !self.graph.lower(self.i,self.j).is_past_infinite() }
-                        || unsafe { !self.graph.lower(self.j,self.i).is_past_infinite() }
-                    {
-                        return Some(TimeGraphConstraint {
-                            from: self.i,
-                            to: self.j,
-                            graph: &self.graph
-                        })
-                    }
+
+                } else if unsafe { !self.graph.lower(self.i,self.j).is_past_infinite() }
+                    || unsafe { !self.graph.lower(self.j,self.i).is_past_infinite() }
+                {
+                    return Some(TimeGraphConstraint {
+                        from: self.i,
+                        to: self.j,
+                        graph: self.graph
+                    })
                 }
             }
         }
@@ -211,18 +210,19 @@ impl<'a> Iterator for TimeConstraintFromIter<'a> {
             let current = TimeGraphConstraint {
                 from: self.i,
                 to: self.j,
-                graph: &self.graph
+                graph: self.graph
             };
             loop { // search the next current
                 self.j += 1;
+
                 if self.j == self.graph.size() {
                     self.i = self.graph.size();
                     break;
-                } else if self.i != self.j {
-                    if unsafe { !self.graph.lower(self.i,self.j).is_past_infinite() }
-                        || unsafe { !self.graph.lower(self.j,self.i).is_past_infinite() } {
-                       break;
-                    }
+
+                } else if self.i != self.j &&
+                    (unsafe { !self.graph.lower(self.i,self.j).is_past_infinite() }
+                        || unsafe { !self.graph.lower(self.j,self.i).is_past_infinite() }) {
+                    break;
                 }
             }
             Some(current)

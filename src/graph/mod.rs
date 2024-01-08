@@ -68,7 +68,7 @@
 #[embed_doc_image("timegraph-2", "images/timegraph-2.png")]
 #[embed_doc_image("timegraph-3", "images/timegraph-3.png")]
 
-#[derive(Clone)]
+#[derive(Clone,Default)]
 pub struct TimeGraph {
     size : Instant,
     data : Vec<TimeValue>,

@@ -65,7 +65,8 @@ impl<I:TimeConvexIterator> Iterator for IterComplementary<I>
                 });
             if start.is_some() { return start; }
         }
-        while let Some(next) = self.iter.next() {
+        for next in self.iter.by_ref()
+        {
             if self.lower < next.lower_bound() {
                 let result = TimeInterval {
                     lower: self.lower,

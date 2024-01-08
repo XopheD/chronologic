@@ -317,8 +317,7 @@ impl<T> Add<TimeSpans> for TimeSet<T>
     fn add(self, other: TimeSpans) -> Self::Output
     {
         self.0.into_iter()
-            .map(|i| other.0.iter().copied().map(move |j| (i,j)))
-            .flatten()
+            .flat_map(|i| other.0.iter().copied().map(move |j| (i,j)))
             .map(|(a,b)| a+b)
             .collect()
     }
@@ -335,8 +334,7 @@ impl<T> Sub<TimeSpans> for TimeSet<T>
     fn sub(self, other: TimeSpans) -> Self::Output
     {
         self.0.into_iter()
-            .map(|i| other.0.iter().copied().map(move |j| (i,j)))
-            .flatten()
+            .flat_map(|i| other.0.iter().copied().map(move |j| (i,j)))
             .map(|(a,b)| a-b)
             .collect()
     }

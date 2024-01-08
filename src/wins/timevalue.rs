@@ -1,7 +1,6 @@
 use std::iter::Sum;
 use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 use std::time;
-use chrono::Duration;
 use crate::*;
 
 
@@ -13,12 +12,35 @@ pub struct TimeValue(pub(crate) i64);
 
 impl TimeValue {
 
+    /// Creates a new time value for a number of clock ticks.
+    ///
+    /// A clock tick is the smallest duration of time taken into account
+    /// by this crate.
+    ///
+    /// If the given number of ticks is less than -[`TimeValue::INFINITE`]
+    /// or greater than [`TimeValue::INFINITE`], the time value is
+    /// set to infinite.
+    ///
+    /// If you are sure that the number of ticks is within the finite range
+    /// value, using the unsafe version [`Self::from_ticks_unchecked`] could
+    /// be considered
     #[inline]
     pub fn from_ticks(t:i64) -> Self
     {
         Self(t.max(-INFINITE_TIME_VALUE))
     }
 
+    /// Creates a new time value for a number of clock ticks.
+    ///
+    /// A clock tick is the smallest duration of time taken into account
+    /// by this crate.
+    ///
+    /// # Safety
+    /// If the given number of ticks is less than -[`TimeValue::INFINITE`]
+    /// or greater than [`TimeValue::INFINITE`], the behaviour of the
+    /// time value is unpredictable.
+    ///
+    /// For a safety use, consider [`Self::from_ticks`].
     #[inline]
     pub unsafe fn from_ticks_unchecked(t:i64) -> Self
     {
@@ -102,7 +124,7 @@ impl TimeValue {
     }
 
     #[inline]
-    pub fn to_duration(&self) -> Duration { (*self).into() }
+    pub fn to_duration(&self) -> chrono::Duration { (*self).into() }
 
     #[inline]
     pub fn is_zero(&self) -> bool { self.0 == 0 }
@@ -157,7 +179,7 @@ impl TimePoint for TimeValue
 
     #[inline]
     fn is_past_infinite(&self) -> bool {
-        debug_assert_ne!( self.0, i64::MIN );
+        debug_assert_ne!(self.0, i64::MIN);
         self.0 == -INFINITE_TIME_VALUE
     }
 
@@ -177,12 +199,12 @@ impl TimePoint for TimeValue
     }
 }
 
-impl Into<chrono::Duration> for TimeValue
+impl From<TimeValue> for chrono::Duration
 {
-    fn into(self) -> chrono::Duration
-    {
+    #[inline]
+    fn from(value: TimeValue) -> Self {
         chrono::Duration::nanoseconds(
-            ((self.0 as i128 * 1_000_000_000) >> SUBSEC_BITLEN) as i64
+            ((value.0 as i128 * 1_000_000_000) >> SUBSEC_BITLEN) as i64
         )
     }
 }
@@ -199,13 +221,12 @@ impl From<chrono::Duration> for TimeValue
     }
 }
 
-
-impl Into<time::Duration> for TimeValue
+impl From<TimeValue> for time::Duration
 {
-    fn into(self) -> time::Duration
-    {
-        assert!( self.0 >= 0 , "can’t convert negative time value to duration");
-        time::Duration::new(self.as_secs() as u64, self.subsec_nanos() as u32)
+    #[inline]
+    fn from(value: TimeValue) -> Self {
+        assert!( value.0 >= 0 , "can’t convert negative time value to duration");
+        time::Duration::new(value.as_secs() as u64, value.subsec_nanos() as u32)
     }
 }
 

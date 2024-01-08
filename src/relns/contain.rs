@@ -23,8 +23,7 @@ impl<T:TimePoint,TW> TimeContaining<TW> for TimeSet<T>
     fn contains(&self, rhs: &TW) -> bool
     {
         self.0.iter()
-            .skip_while(|ts| ts.upper_bound() < rhs.lower_bound())
-            .next()
+            .find(|ts| ts.upper_bound() >= rhs.lower_bound())
             .map(|ts| ts.contains(rhs))
             .unwrap_or(false)
     }

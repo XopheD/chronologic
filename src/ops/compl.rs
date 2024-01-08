@@ -41,21 +41,14 @@ impl<T:TimePoint> Not for TimeInterval<T> {
         } else {
             let cut1 = self.lower_bound().just_before();
             let cut2 = self.upper_bound().just_after();
-            if cut1.is_past_infinite() {
-                if cut2.is_future_infinite() {
-                    TimeSet::empty()
-                } else {
-                    TimeSet(vec![TimeInterval { lower: cut2, upper: T::INFINITE }])
-                }
-            } else {
-                if cut2.is_future_infinite() {
-                    TimeSet(vec![TimeInterval { lower: -T::INFINITE, upper: cut1 }])
-                } else {
-                    TimeSet(vec![
-                        TimeInterval { lower: -T::INFINITE, upper: cut1 },
-                        TimeInterval { lower: cut2, upper: T::INFINITE },
-                    ])
-                }
+            match (cut1.is_past_infinite(), cut2.is_future_infinite()) {
+                (true, true) => TimeSet::empty(),
+                (true, false) => TimeSet(vec![TimeInterval { lower: cut2, upper: T::INFINITE }]),
+                (false, true) => TimeSet(vec![TimeInterval { lower: -T::INFINITE, upper: cut1 }]),
+                (false, false) => TimeSet(vec![
+                    TimeInterval { lower: -T::INFINITE, upper: cut1 },
+                    TimeInterval { lower: cut2, upper: T::INFINITE },
+                ])
             }
         }
     }

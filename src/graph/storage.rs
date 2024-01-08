@@ -1,12 +1,6 @@
 use std::cmp::Ordering;
 use super::*;
 
-impl Default for TimeGraph {
-    fn default() -> Self {
-        TimeGraph { size: 0, data: vec![] }
-    }
-}
-
 impl TimeGraph {
     /// Clears all the constraints
     ///
@@ -93,6 +87,7 @@ impl TimeGraph {
     #[inline]
     pub fn timespan(&self, i:Instant, j:Instant) -> TimeSpan
     {
+        #[allow(clippy::collapsible_else_if)]
         if i >= j {
             if i >= self.size() {
                 TimeInterval::all()

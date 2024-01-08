@@ -38,23 +38,23 @@ impl<T:TimePoint,TW> BitOr<TW> for &TimeInterval<T>
     {
         if self.is_empty() {
             TimeSet::from(tw)
+
+        } else if tw.is_empty() {
+            (*self).into()
+
+        } else if tw.upper_bound() < self.lower.just_before() {
+            TimeSet(vec![tw.into(), *self])
+
+        } else if self.upper < tw.lower_bound().just_before() {
+            TimeSet(vec![*self, tw.into()])
+
         } else {
-            if tw.is_empty() {
-                (*self).into()
-            } else {
-                if tw.upper_bound() < self.lower.just_before() {
-                    TimeSet(vec![tw.into(), *self])
-                } else if self.upper < tw.lower_bound().just_before() {
-                    TimeSet(vec![*self, tw.into()])
-                } else {
-                    TimeSet(vec![
-                        TimeInterval {
-                            lower: self.lower.min(tw.lower_bound()),
-                            upper: self.upper.max(tw.upper_bound())
-                        }
-                    ])
+            TimeSet(vec![
+                TimeInterval {
+                    lower: self.lower.min(tw.lower_bound()),
+                    upper: self.upper.max(tw.upper_bound())
                 }
-            }
+            ])
         }
     }
 }

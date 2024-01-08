@@ -135,7 +135,7 @@ impl<T:TimePoint> FromIterator<TimeInterval<T>> for TimeSet<T>
                     // very most of the time, time iterators are chronologically sorted
                     // if the gap is more than one tick, just add the new convex at the end
                     if i.lower_bound() > r.upper_bound().just_after() {
-                        r.0.push(i.into()); r
+                        r.0.push(i); r
                     } else {
                         // todo: could be improved
                         r.into_iter().union(i).collect()

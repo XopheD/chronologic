@@ -78,7 +78,7 @@ fn format_duration(t: i64) -> String
     }
 }
 
-fn format_timestamp<'a>(t: Timestamp, timefmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
+fn format_timestamp(t: Timestamp, timefmt: &str) -> DelayedFormat<StrftimeItems<'_>> {
     t.to_datetime().format(timefmt)
 }
 
@@ -123,6 +123,7 @@ impl<TW:TimeWindow> TimeSetFormat for TW
 
 impl fmt::Debug for TimeValue
 {
+    #[allow(clippy::collapsible_else_if)]
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
     {
         if self.0 >= 0 {
@@ -144,6 +145,7 @@ impl fmt::Debug for TimeValue
 
 impl fmt::Display for TimeValue
 {
+    #[allow(clippy::collapsible_else_if)]
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
     {
         if self.0 >= 0 {
@@ -172,6 +174,7 @@ impl fmt::Debug for Timestamp
 
 impl fmt::Display for Timestamp
 {
+    #[allow(clippy::collapsible_else_if)]
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
     {
         if self.0.is_positive() {
@@ -193,6 +196,7 @@ impl fmt::Display for Timestamp
 
 impl<T:TimePoint+fmt::Debug> fmt::Debug for TimeInterval<T>
 {
+    #[allow(clippy::collapsible_else_if)]
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
     {
         if self.is_low_bounded() {

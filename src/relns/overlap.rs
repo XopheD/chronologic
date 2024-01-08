@@ -34,8 +34,7 @@ impl<T:TimePoint, TW> TimeOverlapping<TW> for TimeSet<T>
     fn overlaps(&self, rhs: &TW) -> bool
     {
         self.0.iter()
-            .skip_while(|ts| ts.upper_bound() < rhs.lower_bound())
-            .next()
+            .find(|ts| ts.upper_bound() >= rhs.lower_bound())
             .map(|ts| ts.lower_bound() <= rhs.upper_bound())
             .unwrap_or(false)
     }

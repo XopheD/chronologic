@@ -105,7 +105,7 @@ impl TimeGraph
         let mut swapped = false;
         if self.size() < graph.size() { swap(self, &mut graph); swapped = true; }
         self.data.iter_mut()
-            .zip(graph.data.into_iter())
+            .zip(graph.data)
             .for_each(|(a,b)| if *a < b { *a = b; change = true; });
         if change {
             self.global_propagation()
@@ -194,8 +194,7 @@ impl TimeGraph
                 }
             }
             _ => {
-                iter.into_iter()
-                    .for_each(|k| {
+                iter.for_each(|k| {
                         let max = k.from().max(k.to());
                         if max >= self.size() { self.resize(max+1) }
 

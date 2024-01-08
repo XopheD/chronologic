@@ -43,7 +43,7 @@ pub mod graph;
 use std::fmt::Debug;
 use std::ops::Neg;
 
-// Inner value to represent infinite
+// Inner value to represent infinite values (negative or positive)
 const INFINITE_TIME_VALUE : i64 = i64::MAX;
 
 const SUBSEC_BITLEN: usize = 30; // more than nanosecond precision
@@ -104,4 +104,3 @@ pub trait TimePoint : Debug+Clone+Copy+Eq+Ord+Neg<Output=Self>+Sized {
     /// the *just before* time point does not change and remains infinite.
     fn just_before(&self) -> Self;
 }
-

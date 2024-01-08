@@ -14,6 +14,7 @@ pub trait Timestamped {
     fn timestamp(&self) -> Timestamp;
 }
 
+
 impl Timestamp {
 
     /// Creates a timepoint relative to the origin
@@ -29,10 +30,7 @@ impl Timestamp {
     pub fn elapsed(&self) -> TimeValue { Self::now() - *self }
 
     #[inline]
-    pub fn to_datetime(&self) -> DateTime<Utc>
-    {
-        DateTime::<Utc>::from_utc((*self).into(), Utc)
-    }
+    pub fn to_datetime(&self) -> DateTime<Utc> { Utc.from_utc_datetime(&(*self).into()) }
 
     #[inline]
     pub fn floor(self, period:TimeValue) -> Self
@@ -84,16 +82,19 @@ impl TimeConvex for Timestamp { }
 
 impl Timestamped for Timestamp
 {
-    #[inline]
-    fn timestamp(&self) -> Timestamp { *self }
+    #[inline] fn timestamp(&self) -> Timestamp { *self }
 }
 
+impl<T:Timestamped> Timestamped for &T
+{
+    #[inline] fn timestamp(&self) -> Timestamp { T::timestamp(self) }
+}
 
-impl Into<NaiveDateTime> for Timestamp
+impl From<Timestamp> for NaiveDateTime
 {
     #[inline]
-    fn into(self) -> NaiveDateTime {
-        NaiveDateTime::from_timestamp( self.0.as_secs(), self.0.subsec_nanos() as u32)
+    fn from(value: Timestamp) -> Self {
+        NaiveDateTime::from_timestamp_opt( value.0.as_secs(), value.0.subsec_nanos() as u32).unwrap()
     }
 }
 
@@ -101,7 +102,7 @@ impl From<NaiveDateTime> for Timestamp
 {
     #[inline]
     fn from(t: NaiveDateTime) -> Self {
-        Self(TimeValue::from_nanos(t.timestamp_nanos()))
+        Self(TimeValue::from_nanos(t.timestamp_nanos_opt().unwrap()))
     }
 }
 
@@ -110,7 +111,7 @@ impl<Tz:TimeZone> From<DateTime<Tz>> for Timestamp
 {
     #[inline]
     fn from(t: DateTime<Tz>) -> Self {
-        Self(TimeValue::from_nanos(t.timestamp_nanos()))
+        Self(TimeValue::from_nanos(t.timestamp_nanos_opt().unwrap()))
     }
 }
 
