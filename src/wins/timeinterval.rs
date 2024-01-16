@@ -43,6 +43,25 @@ impl<T:TimePoint> TimeInterval<T>
         }
     }
 
+    /// Interval should be valid (not empty)
+    ///
+    /// # Safety
+    /// To be safe, the three following conditions should be verified:
+    /// * the lower bound should be less (or equal)
+    /// than the upper bound
+    /// * the lower bound should not be set to `+oo`
+    /// * the upper bound should not be set to `-oo`
+    /// In other words, calling this method is safe ony if
+    /// it it for creating a non-empty interval.
+    #[inline]
+    pub unsafe fn new_unchecked(lower: T, upper: T) -> Self
+    {
+        debug_assert!( lower <= upper );
+        debug_assert!( !lower.is_future_infinite() );
+        debug_assert!( !upper.is_past_infinite() );
+        Self { lower, upper }
+    }
+
     #[inline]
     pub fn empty() -> Self {
         Self {
@@ -134,19 +153,20 @@ impl<T:TimePoint> TimeInterval<T>
     #[inline]
     pub fn centered(origin: T, delta: TimeValue) -> Option<Self>
     {
-        let lower = origin - delta;
-        let upper = origin + delta;
         // if delta is negative, we could be surprised...
-        if lower > upper { None } else { Some(Self { lower, upper })}
-
+        delta.is_positive().then_some(Self {
+            lower: origin - delta,
+            upper: origin + delta,
+        })
     }
 
     #[inline]
-    pub fn enlarge(&self, delta: TimeValue) -> Option<Self> {
+    pub fn enlarge(&self, delta: TimeValue) -> Option<Self>
+    {
         let lower = self.lower - delta;
         let upper = self.upper + delta;
         // if delta is negative, we could be surprised...
-        if lower > upper { None } else { Some(Self { lower, upper })}
+        (lower <= upper).then_some(Self { lower, upper } )
     }
 
 }
