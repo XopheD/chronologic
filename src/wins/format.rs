@@ -30,7 +30,7 @@ impl TimePointFormat for Timestamp {
 
 fn format_duration(t: i64) -> String
 {
-    assert! ( t.is_positive() );
+    assert! ( t >= 0 );
     let mut nanos = TimeValue::from_ticks(t).subsec_nanos();
     let _remaining_ticks = t - TimeValue::from_nanos(nanos as i64).as_ticks();
 
@@ -121,7 +121,7 @@ impl<TW:TimeWindow> TimeSetFormat for TW
 
 
 
-impl fmt::Debug for TimeValue
+impl Debug for TimeValue
 {
     #[allow(clippy::collapsible_else_if)]
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
@@ -187,7 +187,7 @@ impl fmt::Display for Timestamp
             if self.is_past_infinite() {
                 write!(formatter, "-oo")
             } else {
-                write!(formatter, "1970-01-01 00:00:00 UTC - {:?}", -self.0)
+                write!(formatter, "{} before 1970-01-01 00:00:00 UTC", -self.0)
             }
         }
     }

@@ -15,7 +15,9 @@ impl TimeValue {
     /// Creates a new time value for a number of clock ticks.
     ///
     /// A clock tick is the smallest duration of time taken into account
-    /// by this crate.
+    /// by this crate. It is about a nanosecond.
+    ///
+    /// A tick is exactly defined as 1/2^30 seconds
     ///
     /// If the given number of ticks is less than -[`TimeValue::INFINITE`]
     /// or greater than [`TimeValue::INFINITE`], the time value is
@@ -47,6 +49,7 @@ impl TimeValue {
         Self(t)
     }
 
+    /// Duration from a number of seconds
     #[inline]
     pub fn from_secs(sec:i64) -> Self
     {
@@ -69,30 +72,62 @@ impl TimeValue {
         }
     }
 
+    /// Duration from a number of years
+    ///
+    /// __Important note__: a year is defined as an average duration of a little less than 365.25
+    /// in order to take into account leap years. More precisely, a year is defined as 146097/400 days.
     #[inline]
-    pub fn from_years(years:i64) -> Self { TimeValue::from_months(12*years) }
+    pub fn from_years(years:i64) -> Self { TimeValue::from_secs(years.saturating_mul(146097*24*3600/400)) }
 
+    /// Duration from a number of months
+    ///
+    /// __Important note__: a month is defined as one twelfth of a year.
+    /// It is therefore defined as a duration of just under 30.5 days.
     #[inline]
-    pub fn from_months(months:i64) -> Self { TimeValue::from_secs(146097*24*3600/400/12*months) }
+    pub fn from_months(months:i64) -> Self { TimeValue::from_secs(months.saturating_mul(146097*24*3600/400/12)) }
 
+    /// Duration from a number of weeks
+    ///
+    /// A week is defined as a duration of 7 days.
     #[inline]
-    pub fn from_weeks(weeks:i64) -> Self { TimeValue::from_days(7*weeks) }
+    pub fn from_weeks(weeks:i64) -> Self { TimeValue::from_secs(weeks.saturating_mul(3600*24*7)) }
 
+    /// Duration from a number of days
+    ///
+    /// A day is defined as a duration of 24 hours.
     #[inline]
-    pub fn from_days(days:i64) -> Self { TimeValue::from_hours(24*days) }
+    pub fn from_days(days:i64) -> Self { TimeValue::from_secs(days.saturating_mul(3600*24)) }
 
+    /// Duration from a number of hours
+    ///
+    /// A hour is defined as a duration of 60 minutes (or 3600s).
     #[inline]
-    pub fn from_hours(hours:i64) -> Self { TimeValue::from_mins(60*hours) }
+    pub fn from_hours(hours:i64) -> Self { TimeValue::from_secs(hours.saturating_mul(3600)) }
 
+    /// Duration from a number of minutes
+    ///
+    /// A minute is defined as a duration of 60 seconds.
     #[inline]
-    pub fn from_mins(mins:i64) -> Self { TimeValue::from_secs(60*mins) }
+    pub fn from_mins(mins:i64) -> Self { TimeValue::from_secs(mins.saturating_mul(60)) }
 
+    /// Approximate duration from a number of milliseconds
+    ///
+    /// __Important note__: the fractional part of a second is represented in ticks which is
+    /// an internal representation close to (but not equal) the nanosecond.
     #[inline]
     pub fn from_millis(millis:i64) -> Self { TimeValue::from_fract(millis, 1_000) }
 
+    /// Approximate duration from a number of microseconds
+    ///
+    /// __Important note__: the fractional part of a second is represented in ticks which is
+    /// an internal representation close to (but not equal) the nanosecond.
     #[inline]
     pub fn from_micros(micros:i64) -> Self { TimeValue::from_fract(micros, 1_000_000) }
 
+    /// Approximate duration from a number of nanoseconds
+    ///
+    /// __Important note__: the fractional part of a second is represented in ticks which is
+    /// an internal representation close to (but not equal) the nanosecond.
     #[inline]
     pub fn from_nanos(nanos:i64) -> Self { TimeValue::from_fract(nanos, 1_000_000_000) }
 
@@ -105,18 +140,30 @@ impl TimeValue {
     #[inline]
     pub fn as_secs(&self) -> i64 { self.0 >> SUBSEC_BITLEN }
 
+    /// Fractional part of a time value (milliseconds)
+    ///
+    /// __Important note__: the fractional part of a second is represented in ticks which is
+    /// an internal representation close to (but not equal) the nanosecond.
     #[inline]
     pub fn subsec_millis(&self) -> i32
     {
         self.subsec_nanos() / 1_000_000
     }
 
+    /// Fractional part of a time value (microseconds)
+    ///
+    /// __Important note__: the fractional part of a second is represented in ticks which is
+    /// an internal representation close to (but not equal) the nanosecond.
     #[inline]
     pub fn subsec_micros(&self) -> i32
     {
         self.subsec_nanos() / 1_000
     }
 
+    /// Fractional part of the time value (nanoseconds)
+    ///
+    /// __Important note__: the fractional part of a second is represented in ticks which is
+    /// an internal representation close to (but not equal) the nanosecond.
     #[inline]
     pub fn subsec_nanos(&self) -> i32
     {

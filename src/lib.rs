@@ -38,6 +38,7 @@ mod relns;
 pub use relns::*;
 
 pub mod graph;
+mod seq;
 
 
 use std::fmt::Debug;

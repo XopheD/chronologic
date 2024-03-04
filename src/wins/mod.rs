@@ -3,12 +3,14 @@ mod timevalue;
 mod timeinterval;
 mod timeset;
 mod format;
+mod convert;
 
 pub use timevalue::TimeValue;
 pub use timestamp::{Timestamp,Timestamped};
 pub use timeinterval::*;
 pub use timeset::*;
 pub use format::{TimeSetFormat,TimePointFormat};
+pub use convert::IntoTimeValue;
 use crate::iter::TimeConvexIterator;
 
 
