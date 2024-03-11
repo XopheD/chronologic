@@ -167,7 +167,7 @@ impl TimeValue {
     #[inline]
     pub fn subsec_nanos(&self) -> i32
     {
-        (((self.0 & SUBSEC_BITMASK) * 10_000_000_000 + 5_000_000_000) >> SUBSEC_BITLEN) as i32/10
+        ((((self.0 & SUBSEC_BITMASK)  as u64 * 10_000_000_000 + 5_000_000_000) >> SUBSEC_BITLEN)/10) as i32
     }
 
     #[inline]

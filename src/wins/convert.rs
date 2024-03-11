@@ -100,15 +100,10 @@ mod tests {
         assert_eq!(1_000_000.nanos(), 1000.micros());
         assert_eq!(1_000_000.nanos(), 1.millis());
 
-        // frac << SUBSEC_BITLEN)/unit)
-        let frac = 10;
-        let unit = 1000;
-        for t in 0..10 {
-            let ticks = (frac as f64)*((1<<SUBSEC_BITLEN) as f64);
-            println!("{} {ticks}", TimeValue::from_ticks((ticks/10.) as i64));
-        }
-
         assert_eq!(10.millis().to_string(), "10ms");
+        assert_eq!(10.micros().to_string(), "10us");
+        assert_eq!(1.micros().to_string(), "1us");
+        assert_eq!(1.millis().to_string(), "1ms");
 
         let t = 1.weeks() + 5.hours() + 7.mins() + 4.secs() + 42.millis() ;
         assert_eq!(t.days().to_string(),  "7d");
