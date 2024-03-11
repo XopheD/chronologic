@@ -31,7 +31,7 @@ impl TimePointFormat for Timestamp {
 fn format_duration(t: i64) -> String
 {
     assert! ( t >= 0 );
-    let mut nanos = TimeValue::from_ticks(t).subsec_nanos();
+    let mut nanos = dbg!(TimeValue::from_ticks(dbg!(t)).round_subsec_nanos());
     let _remaining_ticks = t - TimeValue::from_nanos(nanos as i64).as_ticks();
 
     fn concat_unit<F:Fn(i64)->TimeValue>(ticks: (i64,String), convert:F, unit: &str) -> (i64, String)

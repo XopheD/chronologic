@@ -90,6 +90,7 @@ convert_safely!(usize, |x| if x > i64::MAX as usize { i64::MAX } else { x as i64
 
 #[cfg(test)]
 mod tests {
+    use crate::{SUBSEC_BITLEN, TimeValue};
     use crate::wins::convert::IntoTimeValue;
 
     #[test]
@@ -98,6 +99,16 @@ mod tests {
         assert_eq!(24.hours(), 1.days());
         assert_eq!(1_000_000.nanos(), 1000.micros());
         assert_eq!(1_000_000.nanos(), 1.millis());
+
+        // frac << SUBSEC_BITLEN)/unit)
+        let frac = 10;
+        let unit = 1000;
+        for t in 0..10 {
+            let ticks = (frac as f64)*((1<<SUBSEC_BITLEN) as f64);
+            println!("{} {ticks}", TimeValue::from_ticks((ticks/10.) as i64));
+        }
+
+        assert_eq!(10.millis().to_string(), "10ms");
 
         let t = 1.weeks() + 5.hours() + 7.mins() + 4.secs() + 42.millis() ;
         assert_eq!(t.days().to_string(),  "7d");

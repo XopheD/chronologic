@@ -68,7 +68,7 @@ impl TimeValue {
             TimeValue::INFINITE
         } else {
             // we should separate in order to deal with overflow
-            Self((sec<<SUBSEC_BITLEN) + ((frac << SUBSEC_BITLEN)/unit))
+            Self((sec<<SUBSEC_BITLEN) + (frac << SUBSEC_BITLEN)/unit)
         }
     }
 
@@ -167,7 +167,7 @@ impl TimeValue {
     #[inline]
     pub fn subsec_nanos(&self) -> i32
     {
-        (((self.0 & SUBSEC_BITMASK) * 1_000_000_000) >> SUBSEC_BITLEN) as i32
+        (((self.0 & SUBSEC_BITMASK) * 10_000_000_000 + 5_000_000_000) >> SUBSEC_BITLEN) as i32/10
     }
 
     #[inline]
