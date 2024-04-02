@@ -195,7 +195,7 @@ impl TimeValue {
             if self.0 >= 0 {
                 (self.0/period.0)*period.0
             } else {
-                (self.0/period.0-1)*period.0
+                ((self.0+1)/period.0-1)*period.0
             }
         )
     }
@@ -204,7 +204,7 @@ impl TimeValue {
     pub fn ceil(self, period:TimeValue) -> Self
     {
         Self(
-            if self.0 >= 0 {
+            if self.0 > 0 {
                 ((self.0-1)/period.0+1)*period.0
             } else {
                 ((self.0-1)/period.0)*period.0
@@ -355,5 +355,29 @@ impl SubAssign for TimeValue {
 impl Sum for TimeValue {
     fn sum<I: Iterator<Item=Self>>(iter: I) -> Self {
         iter.reduce(|a,b| a+b).unwrap_or(TimeValue::default())
+    }
+}
+
+#[cfg(test)] mod tests {
+    use crate::TimeValue;
+
+    #[test]
+    fn ceil() {
+        assert_eq!( TimeValue::from_ticks(13).ceil(TimeValue::from_ticks(5)).as_ticks(), 15);
+        assert_eq!( TimeValue::from_ticks(13).ceil(TimeValue::from_ticks(13)).as_ticks(), 13);
+        assert_eq!( TimeValue::from_ticks(0).ceil(TimeValue::from_ticks(13)).as_ticks(), 0);
+        assert_eq!( TimeValue::from_ticks(-13).ceil(TimeValue::from_ticks(5)).as_ticks(), -10);
+        assert_eq!( TimeValue::from_ticks(-15).ceil(TimeValue::from_ticks(5)).as_ticks(), -15);
+    }
+
+
+    #[test]
+    fn floor() {
+        assert_eq!( TimeValue::from_ticks(13).floor(TimeValue::from_ticks(5)).as_ticks(), 10);
+        assert_eq!( TimeValue::from_ticks(13).floor(TimeValue::from_ticks(13)).as_ticks(), 13);
+        assert_eq!( TimeValue::from_ticks(13).floor(TimeValue::from_ticks(14)).as_ticks(), 0);
+        assert_eq!( TimeValue::from_ticks(0).floor(TimeValue::from_ticks(13)).as_ticks(), 0);
+        assert_eq!( TimeValue::from_ticks(-13).floor(TimeValue::from_ticks(5)).as_ticks(), -15);
+        assert_eq!( TimeValue::from_ticks(-13).floor(TimeValue::from_ticks(13)).as_ticks(), -13);
     }
 }
