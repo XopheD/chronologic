@@ -354,7 +354,7 @@ impl SubAssign for TimeValue {
 
 impl Sum for TimeValue {
     fn sum<I: Iterator<Item=Self>>(iter: I) -> Self {
-        iter.reduce(|a,b| a+b).unwrap_or(TimeValue::default())
+        iter.fold(TimeValue::default(), |a,b| a+b)
     }
 }
 
