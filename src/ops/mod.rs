@@ -29,6 +29,21 @@ mod tests {
 
         let d = dates();
         assert_eq!( "[00:01,00:03]U{01:10}".to_string(), (d[70] | (d[1]..=d[3])).format_timeset("%M:%S") );
+
+    }
+
+    #[test]
+    pub fn union2()
+    {
+        let a1 = TimeValue::from_ticks(82);
+        let a2 = TimeValue::from_ticks(178);
+        let b1 = TimeValue::from_ticks(179);
+        let b2 = TimeValue::from_ticks(279);
+
+        let mut a = TimeSet::convex(a1,a2);
+        let b = TimeSet::convex(b1,b2);
+
+        assert_eq!(a|b, TimeInterval::new(a1,b2));
     }
 
     #[test]

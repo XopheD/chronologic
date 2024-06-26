@@ -1,6 +1,5 @@
 use std::ops::Neg;
 use crate::*;
-use crate::iter::TimeUnion;
 
 
 /// A union of [`TimeSpan`] (aliased to [`TimeSet<TimeValue>`])
@@ -87,14 +86,14 @@ impl<T:TimePoint> TimeBounds for TimeSet<T>
     #[inline]
     fn lower_bound(&self) -> Self::TimePoint {
         self.0.first()
-            .map(|i| i.lower_bound())
+            .map(TimeInterval::lower_bound)
             .unwrap_or(Self::TimePoint::INFINITE)
     }
 
     #[inline]
     fn upper_bound(&self) -> Self::TimePoint {
         self.0.last()
-            .map(|i| i.upper_bound())
+            .map(TimeInterval::upper_bound)
             .unwrap_or(-Self::TimePoint::INFINITE)
     }
 }
@@ -125,24 +124,17 @@ impl<T:TimePoint> FromIterator<TimeInterval<T>> for TimeSet<T>
 {
     fn from_iter<I: IntoIterator<Item=TimeInterval<T>>>(iter: I) -> Self
     {
-        let mut iter = iter.into_iter()
-            .filter(|i| !i.is_empty());
-
-        match iter.next() {
-            None => Self::empty(),
-            Some(i) => {
-                iter.fold(i.into(), |mut r,i| {
-                    // very most of the time, time iterators are chronologically sorted
-                    // if the gap is more than one tick, just add the new convex at the end
-                    if i.lower_bound() > r.upper_bound().just_after() {
-                        r.0.push(i); r
-                    } else {
-                        // todo: could be improved
-                        r.into_iter().union(i).collect()
-                    }
-                })
-            }
-        }
+        iter.into_iter()
+            .fold(TimeSet::empty(), |mut r,i | {
+                // very most of the time, time iterators are chronologically sorted
+                // if the gap is more than one tick, just add the new convex at the end
+                if i.lower_bound() > r.upper_bound().just_after() {
+                    r.0.push(i)
+                } else {
+                    r |= i
+                }
+                r
+            })
     }
 }
 
@@ -174,4 +166,46 @@ impl<T,TW> From<TW> for TimeSet<T>
 }
 
 
+impl<T:TimePoint> TimeTruncation for TimeSet<T>
+{
+    /// Returns `true` if something changed
+    fn truncate_before(&mut self, lower: T) -> bool
+    {
+        match self.0.iter().position(|i| i.upper_bound() >= lower)
+        {
+            Some(0) => {
+                // only the first element could change
+                unsafe { self.0.get_unchecked_mut(0) }.truncate_before(lower)
+            }
+            Some(pos) => {
+                let _ = self.0.drain(0..pos);
+                // SAFETY: the position is returned by position, at least one element remains
+                let _ = unsafe { self.0.get_unchecked_mut(0) }.truncate_before(lower);
+                true
+            }
+            None if self.is_empty() => { false }
+            None => { self.0.clear(); true }
+        }
+    }
+
+    /// Returns `true` if something changed
+    fn truncate_after(&mut self, upper: T) -> bool
+    {
+        match self.0.iter().rposition(|i| i.lower_bound() <= upper)
+        {
+            Some(pos) if pos+1 == self.0.len() => {
+                // only the last element could change
+                unsafe { self.0.get_unchecked_mut(pos) }.truncate_after(upper)
+            }
+            Some(pos) => {
+                self.0.truncate(pos+1);
+                // SAFETY: the position is returned by rposition, so it is surely valid
+                let _ = unsafe { self.0.get_unchecked_mut(pos) }.truncate_after(upper);
+                true
+            }
+            None if self.is_empty() => { false }
+            None => { self.0.clear(); true }
+        }
+    }
+}
 

@@ -26,7 +26,8 @@ impl<T:TimePoint,TW> BitAndAssign<TW> for TimeInterval<T>
 {
     #[inline]
     fn bitand_assign(&mut self, tw: TW) {
-        *self = self.bitand(tw)
+        if self.lower < tw.lower_bound() { self.lower = tw.lower_bound(); }
+        if self.upper > tw.upper_bound() { self.upper = tw.upper_bound(); }
     }
 }
 
@@ -60,8 +61,8 @@ impl<T:TimePoint,TW> BitAndAssign<TW> for TimeSet<T>
     where TW: TimeConvex<TimePoint=T>
 {
     fn bitand_assign(&mut self, tw: TW) {
-        // todo: optimise cloning
-        *self = self.clone().bitand(tw)
+        let _ = self.truncate_after(tw.upper_bound());
+        let _ = self.truncate_before(tw.lower_bound());
     }
 }
 

@@ -47,10 +47,10 @@ impl<T:TimePoint> TimeInterval<T>
     ///
     /// # Safety
     /// To be safe, the three following conditions should be verified:
-    /// * the lower bound should be less (or equal)
-    /// than the upper bound
+    /// * the lower bound should be less (or equal) than the upper bound
     /// * the lower bound should not be set to `+oo`
     /// * the upper bound should not be set to `-oo`
+    ///
     /// In other words, calling this method is safe ony if
     /// it it for creating a non-empty interval.
     #[inline]
@@ -115,9 +115,13 @@ impl<T:TimePoint> TimeInterval<T>
     {
         Self { lower: -T::INFINITE, upper: T::INFINITE }
     }
+}
 
+
+impl<T:TimePoint> TimeTruncation for TimeInterval<T>
+{
     /// Returns `true` if something changed
-    pub fn truncate_before(&mut self, lower: T) -> bool
+    fn truncate_before(&mut self, lower: T) -> bool
     {
         if lower <= self.lower {
             false
@@ -132,7 +136,7 @@ impl<T:TimePoint> TimeInterval<T>
     }
 
     /// Returns `true` if something changed
-    pub fn truncate_after(&mut self, upper: T) -> bool
+    fn truncate_after(&mut self, upper: T) -> bool
     {
         if self.upper <= upper {
             false
@@ -146,6 +150,7 @@ impl<T:TimePoint> TimeInterval<T>
         }
     }
 }
+
 
 impl<T:TimePoint> TimeInterval<T>
     where T: Add<TimeValue,Output=T> + Sub<TimeValue,Output=T>

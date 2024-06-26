@@ -144,3 +144,15 @@ impl<TW:TimeConvex> TimeWindow for TW {
         }
     }
 }
+
+
+
+pub trait TimeTruncation : TimeBounds {
+
+    /// Returns `true` if something changed
+    fn truncate_before(&mut self, lower: Self::TimePoint) -> bool;
+
+
+    /// Returns `true` if something changed
+    fn truncate_after(&mut self, upper: Self::TimePoint) -> bool;
+}

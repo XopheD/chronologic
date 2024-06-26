@@ -19,7 +19,7 @@ impl TimeSequence for TimeSeqForward
     }
 
     #[inline]
-    fn reverse(self) -> TimeSeqBackward
+    fn reverse(self) -> impl TimeSequence
     {
         TimeSeqBackward { t: self.t, step: self.step }
     }
