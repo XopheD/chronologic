@@ -47,6 +47,22 @@ mod tests {
     }
 
     #[test]
+    pub fn union3()
+    {
+        let a1 = TimeValue::from_ticks(1);
+        let a2 = TimeValue::from_ticks(5);
+        let b1 = TimeValue::from_ticks(10);
+        let b2 = TimeValue::from_ticks(20);
+
+        let mut w = TimeSpans::empty();
+        dbg!(&w);
+        w |= TimeInterval::new(a1,a2);
+        dbg!(&w);
+        w |= TimeInterval::new(b1,b2);
+        dbg!(&w);
+    }
+
+    #[test]
     pub fn intersection()
     {
 

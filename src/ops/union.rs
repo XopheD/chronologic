@@ -62,70 +62,14 @@ impl<T:TimePoint,TW> BitOr<TW> for &TimeInterval<T>
 //------------ TIME SETS ------------
 
 impl<T:TimePoint,TW> BitOrAssign<TW> for TimeSet<T>
-    where TW: TimeConvex<TimePoint=T> + Debug
+    where TW: TimeConvex<TimePoint=T>
 {
-    fn bitor_assign(&mut self, tw: TW)
-    {
-        if !tw.is_empty() { // nothing to do for union with an empty interval
-            let first = self.0.iter().rposition(|i| i.lower_bound() <= tw.upper_bound().just_after());
-            let last = self.0.iter().position(|i| i.upper_bound() >= tw.lower_bound().just_before());
-            match (first, last) {
-                (None, None) => { // self was initially empty
-                    *self = TimeSet::from(tw)
-                }
-                (Some(first), None) => {
-                    // self:            |---|   |----|   |---|  |----|
-                    // tw:               |------------|
-                    // tw:      |-----------------------|
-                    // tw:      |----|
-                    // SAFETY: first is valid since it is returned by rposition
-                    let w1 = unsafe { self.0.get_unchecked_mut(first) };
-                    if w1.lower_bound().just_before() > tw.upper_bound() {
-                        // the new interval should be inserted before
-                        if first > 0 {
-                            // SAFETY: first > 0 so an (obsolete) element exists just before
-                            unsafe { *self.0.get_unchecked_mut(first-1) = tw.into() }
-                            self.0.drain(0..first-1);
-                        } else {
-                            // no available cell, all the elements should be shifted
-                            self.0.insert(0, tw.into())
-                        }
-                    } else {
-                        // the new interval is merged with the first one
-                        if w1.upper < tw.upper_bound() { w1.upper = tw.upper_bound(); }
-                        w1.lower = tw.lower_bound();
-                        self.0.drain(0..first); // drop the obsolete ones
-                    }
-                }
-                (None, Some(last)) =>  {
-                    // self:   |---|   |----|   |---|
-                    // tw:                 |--------------|
-                    // tw:                    |------------|
-                    // tw:                                   |-----|
-                    // SAFETY: first is valid since it is returned by rposition
-                    let w2 = unsafe { self.0.get_unchecked_mut(last) };
-                    if w2.upper_bound().just_after() < tw.lower_bound() {
-                        // the new interval should be inserted at the end
-                        self.0.push(tw.into())
-                    } else {
-                        w2.upper = tw.upper_bound();
-                        if w2.lower > tw.lower_bound() { w2.lower = tw.lower_bound(); }
-                        self.0.truncate(last + 1);
-                    }
-                }
-                (Some(first), Some(last)) => {
-                    // self:   |---|   |----|   |---|  |----|   |--|
-                    // tw:               |--------------------|
-                    let w1 = unsafe { self.0.get_unchecked_mut(first) };
-                    if w1.lower > tw.lower_bound() { w1.lower = tw.lower_bound(); }
-                    let w2 = unsafe { self.0.get_unchecked_mut(last) };
-                    if w2.upper < tw.upper_bound() { w2.upper = tw.upper_bound(); }
-                    if first < last { self.0.drain(first+1..last); }
-                }
-            }
-        }
+    fn bitor_assign(&mut self, tw: TW) {
+        // todo: optimise cloning
+        *self = self.clone().bitor(tw)
     }
 }
+
 
 impl<T:TimePoint> BitOrAssign<Self> for TimeSet<T>
 {
@@ -155,13 +99,11 @@ impl<T:TimePoint> BitOr<&Self> for TimeSet<T>
     #[inline] fn bitor(self, tw: &Self) -> Self::Output { (&self).bitor(tw) }
 }
 
-impl<T:TimePoint,TW> BitOr<TW> for TimeSet<T>
-    where TW: TimeConvex<TimePoint=T> + Debug
+impl<T:TimePoint, TW> BitOr<TW> for TimeSet<T>
+where TW: TimeConvex<TimePoint=T>
 {
     type Output = Self;
-    #[inline] fn bitor(mut self, tw: TW) -> Self::Output {
-        self |= tw; self
-    }
+    #[inline] fn bitor(self, tw: TW) -> Self::Output { (&self).bitor(tw) }
 }
 
 
@@ -186,14 +128,15 @@ impl<T:TimePoint> BitOr<Self> for &TimeSet<T>
 }
 
 
+
 impl<T:TimePoint, TW> BitOr<TW> for &TimeSet<T>
-    where TW: TimeConvex<TimePoint=T> + Debug
+where TW: TimeConvex<TimePoint=T>
 {
     type Output = TimeSet<T>;
 
     #[inline]
     fn bitor(self, tw: TW) -> Self::Output {
-        self.clone() | tw
+        self.into_iter().union(tw.into()).collect()
     }
 }
 

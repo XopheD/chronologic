@@ -93,7 +93,6 @@ impl<I,J> IterUnion<I,J>
         J:TimeConvexIterator<TimePoint=I::TimePoint>
 {
     fn new(i:I, j:J) -> Self {
-
         Self { i: i.fuse(), j: j.fuse(), state: UnionState::Init, tmp:TimeInterval::all() }
     }
 }
