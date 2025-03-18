@@ -1,6 +1,6 @@
 [package]
 name = "chronologic"
-version = "0.7.5"
+version = "0.7.6"
 edition = "2021"
 authors = ["Xophe <christophe.dousson@me.com>"]
 license = "MIT"
@@ -13,5 +13,5 @@ categories = ["data-structures","algorithms"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-chrono = { version = "0.4.37", default-features = false, features = [ "alloc" ] }
+chrono = { version = "0.4.40", default-features = false, features = [ "alloc" ] }
 embed-doc-image = "0.1.4"

@@ -1,7 +1,6 @@
 use std::ops::Neg;
 use crate::*;
 
-
 /// A union of [`TimeSpan`] (aliased to [`TimeSet<TimeValue>`])
 pub type TimeSpans = TimeSet<TimeValue>;
 
@@ -127,7 +126,7 @@ impl<T:TimePoint> FromIterator<TimeInterval<T>> for TimeSet<T>
         iter.into_iter()
             .fold(TimeSet::empty(), |mut r,i | {
                 // very most of the time, time iterators are chronologically sorted
-                // if the gap is more than one tick, just add the new convex at the end
+                // so if the gap is more than one tick, just add the new convex at the end
                 if i.lower_bound() > r.upper_bound().just_after() {
                     r.0.push(i)
                 } else {
@@ -139,7 +138,7 @@ impl<T:TimePoint> FromIterator<TimeInterval<T>> for TimeSet<T>
 }
 
 
-impl<T:TimePoint> FromIterator<TimeSet<T>> for TimeSet<T>
+impl<T: TimePoint> FromIterator<TimeSet<T>> for TimeSet<T>
 {
     fn from_iter<I: IntoIterator<Item=TimeSet<T>>>(iter: I) -> Self
     {

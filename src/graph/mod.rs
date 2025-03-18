@@ -72,7 +72,7 @@
 pub struct TimeGraph {
     size : Instant,
     data : Vec<TimeValue>,
-    // to make growing easier (i.e. without remaining the matrix order)
+    // to make growing easier (i.e. with keeping the matrix order)
     // the matrix in encoded in a vector as follows:
     //
     //   0 |  3 |  8 | 15
@@ -89,8 +89,6 @@ pub struct TimeGraph {
 use std::fmt;
 use super::*;
 use embed_doc_image::embed_doc_image;
-
-
 
 mod constraints;
 mod propagation;

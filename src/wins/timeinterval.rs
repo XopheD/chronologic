@@ -207,3 +207,10 @@ impl<T:TimePoint> Neg for TimeInterval<T>
 impl<T:TimePoint> From<T> for TimeInterval<T> {
     #[inline] fn from(t: T) -> Self { TimeInterval::singleton(t) }
 }
+
+impl<T:TimePoint> From<(T,T)> for TimeInterval<T> {
+    #[inline]
+    fn from((lower, upper): (T, T)) -> Self {
+        Self::new(lower, upper)
+    }
+}

@@ -107,7 +107,7 @@ impl<I,J> Iterator for IterUnion<I,J>
 
     fn next(&mut self) -> Option<Self::Item>
     {
-        loop {  //dbg!(self.state); dbg!(self.tmp);
+        loop {
             match self.state {
                 UnionState::Init => {
                     match (self.i.next(), self.j.next()) {
@@ -115,7 +115,7 @@ impl<I,J> Iterator for IterUnion<I,J>
                         (Some(i), None) => { self.state = UnionState::OnlyI; return Some(i); },
                         (None, Some(j)) => { self.state = UnionState::OnlyJ; return Some(j); },
 
-                        (Some(i), Some(j)) if i.upper < j.lower => {
+                        (Some(i), Some(j)) if i.upper < j.lower.just_before() => {
                             // i:       [------------------]
                             // j:                                  [--------]
                             //=>tmp:                               [--------]
@@ -123,14 +123,14 @@ impl<I,J> Iterator for IterUnion<I,J>
                             self.tmp=j; return Some(i);
                         },
 
-                        (Some(i), Some(j)) if j.upper < i.lower  => {
+                        (Some(i), Some(j)) if j.upper < i.lower.just_before()  => {
                             // i:                          [------------------]
                             // j:          [--------]
                             //=>tmp:                       [------------------]
                             self.state = UnionState::WaitJ;
                             self.tmp=i; return Some(j);
                         },
-                        (Some(i), Some(j)) if i.upper < j.upper  => {
+                        (Some(i), Some(j)) if i.upper <= j.upper  => {
                             // i:     [------------------]       or           [-----------]
                             // j:                  [--------]    or    [----------------------]
                             //=>tmp:  [---------------------]    or    [----------------------]
@@ -153,13 +153,13 @@ impl<I,J> Iterator for IterUnion<I,J>
                             self.state = UnionState::OnlyJ;
                             return Some(self.tmp);
                         },
-                        Some(i) if i.upper < self.tmp.lower => {
+                        Some(i) if i.upper < self.tmp.lower.just_before() => {
                             // i:       [------------------]
                             // tmp:                                [--------]
                             //=>tmp:                               [--------]
                             return Some(i);
                         },
-                        Some(mut i) if self.tmp.upper < i.lower  => {
+                        Some(mut i) if self.tmp.upper < i.lower.just_before()  => {
                             // i:                          [------------------]
                             // tmp:        [--------]
                             //=>tmp:                       [------------------]
@@ -190,13 +190,13 @@ impl<I,J> Iterator for IterUnion<I,J>
                             self.state = UnionState::OnlyJ;
                             return Some(self.tmp);
                         },
-                        Some(j) if j.upper < self.tmp.lower => {
+                        Some(j) if j.upper < self.tmp.lower.just_before() => {
                             // tmp:                                [--------]
                             // j:       [------------------]
                             //=>tmp:                               [--------]
                             return Some(j);
                         },
-                        Some(mut j) if self.tmp.upper < j.lower  => {
+                        Some(mut j) if self.tmp.upper < j.lower.just_before()  => {
                             // tmp:        [--------]
                             // j:                          [------------------]
                             //=>tmp:                       [------------------]

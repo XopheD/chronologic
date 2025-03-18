@@ -125,7 +125,7 @@ impl TimeGraph
         //- qui nous interesse (donc io et jo).
         //- La complexite de cet algorithme est exactement en n2+n.
 
-        //- ATTENTION: si la table n'etait pas propagee avant l'ajout de la
+        //- ATTENTION: si la table n'est pas propagee avant l'ajout de la
         //- contrainte (io,jo), l'algo. fera n'importe quoi
         //- (en tout cas, certainement pas la propagation complete)
 

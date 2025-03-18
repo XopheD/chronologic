@@ -112,7 +112,7 @@ impl<I,J> Iterator for IterIntersection<I,J>
                     match (self.i.next(), self.j.next()) {
                         (None,_)|(_,None) => { self.state = InterState::End; return None; }
 
-                        (Some(i), Some(j)) if i.upper < j.lower => {
+                        (Some(i), Some(j)) if i.upper < j.lower.just_before() => {
                             // i:       [------------------]
                             // j:                                  [--------]
                             //=>tmp:                               [--------]
@@ -120,13 +120,13 @@ impl<I,J> Iterator for IterIntersection<I,J>
                             self.tmp=j;
                         },
 
-                        (Some(i), Some(j)) if j.upper < i.lower  => {
+                        (Some(i), Some(j)) if j.upper < i.lower.just_before()  => {
                             // i:                          [------------------]
                             // j:          [--------]
                             self.state = InterState::WaitJ;
                             self.tmp=i;
                         },
-                        (Some(mut i), Some(j)) if i.upper < j.upper  => {
+                        (Some(mut i), Some(j)) if i.upper <= j.upper  => {
                             // i:     [------------------]       or           [-----------]
                             // j:                  [--------]    or    [----------------------]
                             self.state = InterState::WaitI;
@@ -149,11 +149,11 @@ impl<I,J> Iterator for IterIntersection<I,J>
                             self.state = InterState::End;
                             return None;
                         },
-                        Some(i) if i.upper < self.tmp.lower => {
+                        Some(i) if i.upper < self.tmp.lower.just_before() => {
                             // i:       [------------------]
                             // tmp:                                [--------]
                         },
-                        Some(i) if self.tmp.upper < i.lower  => {
+                        Some(i) if self.tmp.upper < i.lower.just_before()  => {
                             // i:                          [------------------]
                             // tmp:        [--------]
                             self.state = InterState::WaitJ;
@@ -182,11 +182,11 @@ impl<I,J> Iterator for IterIntersection<I,J>
                             self.state = InterState::End;
                             return None;
                         },
-                        Some(j) if j.upper < self.tmp.lower => {
+                        Some(j) if j.upper < self.tmp.lower.just_before() => {
                             // tmp:                                [--------]
                             // j:       [------------------]
                         },
-                        Some(j) if self.tmp.upper < j.lower  => {
+                        Some(j) if self.tmp.upper < j.lower.just_before()  => {
                             // tmp:        [--------]
                             // j:                          [------------------]
                             self.state = InterState::WaitI;
