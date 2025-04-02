@@ -63,6 +63,13 @@ mod tests {
     }
 
     #[test]
+    pub fn union4()
+    {
+        assert_eq!(TimeSpans::empty() | TimeSpans::all(), TimeSpans::all());
+        assert_eq!(TimeSlots::empty() | TimeSlots::all(), TimeSlots::all());
+    }
+
+    #[test]
     pub fn intersection()
     {
 

@@ -123,8 +123,10 @@ impl<T:TimePoint> FromIterator<TimeInterval<T>> for TimeSet<T>
 {
     fn from_iter<I: IntoIterator<Item=TimeInterval<T>>>(iter: I) -> Self
     {
-        iter.into_iter()
-            .fold(TimeSet::empty(), |mut r,i | {
+        let mut iter = iter.into_iter();
+        match iter.next() {
+            None => Self::empty(),
+            Some(first) => iter.fold(first.into(), |mut r, i| {
                 // very most of the time, time iterators are chronologically sorted
                 // so if the gap is more than one tick, just add the new convex at the end
                 if i.lower_bound() > r.upper_bound().just_after() {
@@ -134,6 +136,7 @@ impl<T:TimePoint> FromIterator<TimeInterval<T>> for TimeSet<T>
                 }
                 r
             })
+        }
     }
 }
 
