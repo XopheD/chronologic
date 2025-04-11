@@ -59,8 +59,6 @@ macro_rules! timevalscalingbig {
 
 timevalscalingbig!(i128);
 timevalscalingbig!(isize);
-timevalscalingbig!(f32);
-timevalscalingbig!(f64);
 
 // GROUP 3: scale factor is unsigned and could be greater than i64::MAX (abs value)
 
@@ -92,6 +90,37 @@ timevalscalingubig!(u64);
 timevalscalingubig!(u128);
 timevalscalingubig!(usize);
 
+
+// GROUP 4: scale factor is a float (could be less than 1.0)
+
+macro_rules! timevalscalingfloat {
+    ($time: ty) => {
+        impl Mul<$time> for TimeValue {
+            type Output = Self;
+            #[inline]
+            fn mul(self, n: $time) -> Self::Output {
+                let t = self.0 as $time * n;
+                if t > INFINITE_TIME_VALUE as $time {
+                    TimeValue::INFINITE
+                } else if t < -INFINITE_TIME_VALUE as $time {
+                    -TimeValue::INFINITE
+                } else {
+                    TimeValue::from_ticks(t as i64)
+                }
+            }
+        }
+        impl Div<$time> for TimeValue {
+            type Output = Self;
+            #[inline]
+            fn div(self, n: $time) -> Self::Output {
+                self.mul(1. / n)
+            }
+        }
+    };
+}
+
+timevalscalingfloat!(f32);
+timevalscalingfloat!(f64);
 
 macro_rules! timescalingassign {
     ($time:ty, $scale:ty) => {
