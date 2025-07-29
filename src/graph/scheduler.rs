@@ -24,7 +24,7 @@ pub struct TimeScheduler<'a> {
 
 impl TimeScheduler<'_> {
 
-    pub fn new(graph: &TimeGraph) -> TimeScheduler
+    pub fn new(graph: &TimeGraph) -> TimeScheduler<'_>
     {
         TimeScheduler {
             constraints: graph,

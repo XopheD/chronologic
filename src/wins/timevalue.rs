@@ -8,6 +8,7 @@ use crate::*;
 ///
 /// This time value represent a duration and could be infinite.
 #[derive(Copy, Clone, Default, Hash, Eq, PartialEq, Ord, PartialOrd)]
+#[cfg_attr(feature="serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TimeValue(pub(crate) i64);
 
 impl TimeValue {

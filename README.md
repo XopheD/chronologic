@@ -9,6 +9,9 @@
 It is designed to manage efficiently thousands of instants
 in order to be used, for instance, for planning or sheduling problems.
 
+## Features
+* `serde` provides the Serialize/Deserialize traits for all structures of this crate
+
  ## Time structures
  Several time structures (interval, sets) are provided
  to make easier time manipulation.

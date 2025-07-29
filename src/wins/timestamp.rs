@@ -6,6 +6,7 @@ use crate::*;
 
 /// # A UTC timestamp (date + time)
 #[derive(Copy, Clone, Default, Hash, Eq, PartialEq, Ord, PartialOrd)]
+#[cfg_attr(feature="serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Timestamp(pub(crate) TimeValue);
 
 /// A trait for marking timestamped data

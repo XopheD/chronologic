@@ -15,6 +15,7 @@ pub type TimeSlot = TimeInterval<Timestamp>;
 
 /// # A generic interval defined by its two time bounds
 #[derive(Copy, Clone, Eq, Hash)]
+#[cfg_attr(feature="serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TimeInterval<T:TimePoint> { pub(crate) lower:T, pub(crate) upper:T }
 
 

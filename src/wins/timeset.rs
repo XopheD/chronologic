@@ -16,6 +16,7 @@ pub type TimeSlots = TimeSet<Timestamp>;
 /// and all the inner intervals are disjoint. If, when added,
 /// two intervals overlaps, then they are merged.
 #[derive(Clone, Eq, Hash)]
+#[cfg_attr(feature="serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TimeSet<T:TimePoint>(pub(crate) Vec<TimeInterval<T>>);
 
 
