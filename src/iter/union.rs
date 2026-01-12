@@ -111,16 +111,17 @@ impl<I,J> Iterator for IterUnion<I,J>
             match self.state {
                 UnionState::Init => {
                     match (self.i.next(), self.j.next()) {
-                        (None,None) => { self.state = UnionState::End; return None; }
-                        (Some(i), None) => { self.state = UnionState::OnlyI; return Some(i); },
-                        (None, Some(j)) => { self.state = UnionState::OnlyJ; return Some(j); },
+                        (None,None) => { self.state = UnionState::End; break None }
+                        (Some(i), None) => { self.state = UnionState::OnlyI; break Some(i) },
+                        (None, Some(j)) => { self.state = UnionState::OnlyJ; break Some(j) },
 
                         (Some(i), Some(j)) if i.upper < j.lower.just_before() => {
                             // i:       [------------------]
                             // j:                                  [--------]
                             //=>tmp:                               [--------]
                             self.state = UnionState::WaitI;
-                            self.tmp=j; return Some(i);
+                            self.tmp=j;
+                            break Some(i)
                         },
 
                         (Some(i), Some(j)) if j.upper < i.lower.just_before()  => {
@@ -128,7 +129,8 @@ impl<I,J> Iterator for IterUnion<I,J>
                             // j:          [--------]
                             //=>tmp:                       [------------------]
                             self.state = UnionState::WaitJ;
-                            self.tmp=i; return Some(j);
+                            self.tmp=i;
+                            break Some(j)
                         },
                         (Some(i), Some(j)) if i.upper <= j.upper  => {
                             // i:     [------------------]       or           [-----------]
@@ -151,13 +153,13 @@ impl<I,J> Iterator for IterUnion<I,J>
                         None => {
                             /* end of the iterator over i...*/
                             self.state = UnionState::OnlyJ;
-                            return Some(self.tmp);
+                            break Some(self.tmp)
                         },
                         Some(i) if i.upper < self.tmp.lower.just_before() => {
                             // i:       [------------------]
                             // tmp:                                [--------]
                             //=>tmp:                               [--------]
-                            return Some(i);
+                            break Some(i)
                         },
                         Some(mut i) if self.tmp.upper < i.lower.just_before()  => {
                             // i:                          [------------------]
@@ -165,7 +167,7 @@ impl<I,J> Iterator for IterUnion<I,J>
                             //=>tmp:                       [------------------]
                             self.state = UnionState::WaitJ;
                             swap(&mut self.tmp, &mut i);
-                            return Some(i);
+                            break Some(i)
                         },
                         Some(i) if i.upper <= self.tmp.upper => {
                             // i:     [------------------]       or           [-----------]
@@ -186,15 +188,15 @@ impl<I,J> Iterator for IterUnion<I,J>
                 UnionState::WaitJ => {
                     match self.j.next() {
                         None => {
-                            /* end of the iterator over i...*/
-                            self.state = UnionState::OnlyJ;
-                            return Some(self.tmp);
+                            /* end of the iterator over j...*/
+                            self.state = UnionState::OnlyI;
+                            break Some(self.tmp)
                         },
                         Some(j) if j.upper < self.tmp.lower.just_before() => {
                             // tmp:                                [--------]
                             // j:       [------------------]
                             //=>tmp:                               [--------]
-                            return Some(j);
+                            break Some(j)
                         },
                         Some(mut j) if self.tmp.upper < j.lower.just_before()  => {
                             // tmp:        [--------]
@@ -202,7 +204,7 @@ impl<I,J> Iterator for IterUnion<I,J>
                             //=>tmp:                       [------------------]
                             self.state = UnionState::WaitI;
                             swap(&mut self.tmp, &mut j);
-                            return Some(j);
+                            break Some(j)
                         },
                         Some(j) if j.upper <= self.tmp.upper => {
                             // tmp:                [--------]    or    [----------------------]
@@ -220,9 +222,9 @@ impl<I,J> Iterator for IterUnion<I,J>
                         }
                     }
                 }
-                UnionState::OnlyI => { return self.i.next(); }
-                UnionState::OnlyJ => { return self.j.next(); }
-                UnionState::End => { return None; }
+                UnionState::OnlyI => { break self.i.next() }
+                UnionState::OnlyJ => { break self.j.next() }
+                UnionState::End => { break None }
             }
         }
     }

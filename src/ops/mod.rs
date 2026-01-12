@@ -65,6 +65,17 @@ mod tests {
     #[test]
     pub fn union4()
     {
+        let mut t1 = TimeSpans::empty();
+        t1 |= TimeValue::from_hours(13)..=TimeValue::from_hours(14);
+        t1 |= TimeValue::from_hours(22)..=TimeValue::from_hours(24);
+        t1 |= TimeValue::from_hours(0)..=TimeValue::from_hours(2);
+
+        let mut t2 = TimeSpans::empty();
+        t2 |= TimeValue::from_hours(0)..=TimeValue::from_hours(2);
+        t2 |= TimeValue::from_hours(13)..=TimeValue::from_hours(14);
+        t2 |= TimeValue::from_hours(22)..=TimeValue::from_hours(24);
+        assert_eq!(t1, t2);
+
         assert_eq!(TimeSpans::empty() | TimeSpans::all(), TimeSpans::all());
         assert_eq!(TimeSlots::empty() | TimeSlots::all(), TimeSlots::all());
     }

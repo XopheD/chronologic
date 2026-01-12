@@ -90,7 +90,6 @@ convert_safely!(usize, |x| if x > i64::MAX as usize { i64::MAX } else { x as i64
 
 #[cfg(test)]
 mod tests {
-    use crate::{SUBSEC_BITLEN, TimeValue};
     use crate::wins::convert::IntoTimeValue;
 
     #[test]
