@@ -35,7 +35,7 @@ impl<I:TimeConvexIterator> Iterator for TimeValueTranslIter<I>
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|tw| tw+self.t)
-            .and_then(|tw| if tw.is_empty() { None } else { Some(tw) })
+            .filter(|tw| !tw.is_empty())
     }
 }
 

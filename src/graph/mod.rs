@@ -1,7 +1,7 @@
 //! # Time constraints management
-
+///
 /// # A graph of non disjunctive time constraints.
-
+///
 /// Each node  of the graph corresponds to an instant and
 /// the time constraints between two nodes are defined as a TimeInterval.
 /// Each added constraint is
@@ -58,11 +58,11 @@
 ///
 /// ## References
 /// 1. C. Dousson. _"Evolution Monitoring and Chronicle Recognition."_
-///    PhD thesis (in french), computer sciences, A.I., Université Paul Sabatier, Toulouse (1994)
+///   PhD thesis (in french), computer sciences, A.I., Université Paul Sabatier, Toulouse (1994)
 /// 1. U. Montanari. _"Networks of constraints: fundamental properties and applications to picture
-///      processing"_, Information sciences 7, 1974, pp 95-132.
+///   processing"_, Information sciences 7, 1974, pp 95-132.
 /// 1. C.H. Papadimitriou and K. Steiglitz. _"Combinatorial optimization: algorithms and complexity."_
-/// 	Prentice-Hall, Englewood Cliffs, N.J. 1982.</li>
+///   Prentice-Hall, Englewood Cliffs, N.J. 1982.</li>
 ///
 #[embed_doc_image("timegraph-1", "images/timegraph-1.png")]
 #[embed_doc_image("timegraph-2", "images/timegraph-2.png")]

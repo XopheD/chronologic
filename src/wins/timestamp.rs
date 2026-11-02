@@ -95,7 +95,7 @@ impl From<Timestamp> for NaiveDateTime
 {
     #[inline]
     fn from(value: Timestamp) -> Self {
-        NaiveDateTime::from_timestamp_opt( value.0.as_secs(), value.0.subsec_nanos() as u32).unwrap()
+        DateTime::from_timestamp(value.0.as_secs(), value.0.subsec_nanos() as u32).unwrap().naive_utc()
     }
 }
 
@@ -103,7 +103,7 @@ impl From<NaiveDateTime> for Timestamp
 {
     #[inline]
     fn from(t: NaiveDateTime) -> Self {
-        Self(TimeValue::from_nanos(t.timestamp_nanos_opt().unwrap()))
+        Self(TimeValue::from_nanos(t.and_utc().timestamp_nanos_opt().unwrap()))
     }
 }
 

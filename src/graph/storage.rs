@@ -151,7 +151,7 @@ impl fmt::Debug for TimeGraph {
             write!(f,"[")?;
             for j in 0..self.size() {
                 let k = format!("{:?}", unsafe { self.lower(i,j) });
-                write!(f, " {:>7}", &k)?;
+                write!(f, " {k:>7}")?;
             };
             writeln!(f, " ]")?
         }

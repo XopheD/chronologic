@@ -215,3 +215,10 @@ impl<T:TimePoint> From<(T,T)> for TimeInterval<T> {
         Self::new(lower, upper)
     }
 }
+
+impl<T:TimePoint> From<[T;2]> for TimeInterval<T> {
+    #[inline]
+    fn from([lower, upper]: [T;2]) -> Self {
+        Self::new(lower, upper)
+    }
+}

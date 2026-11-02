@@ -16,7 +16,7 @@ impl TimePointFormat for TimeValue {
         if self.is_positive() {
             format_duration(self.as_ticks())
         } else {
-            format!("- {}", &format_duration(-self.as_ticks()))
+            format!("- {}", format_duration(-self.as_ticks()))
         }
     }
 }
@@ -40,7 +40,7 @@ fn format_duration(t: i64) -> String
         if x == 0 {
             ticks
          } else {
-            (ticks.0 - (convert)(x).as_ticks(), format!("{}{}{} ", &ticks.1, x, unit))
+            (ticks.0 - (convert)(x).as_ticks(), format!("{}{x}{unit} ", ticks.1))
         }
     }
     if t == 0 { return "0".to_string(); }

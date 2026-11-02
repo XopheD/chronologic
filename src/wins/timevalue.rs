@@ -196,7 +196,7 @@ impl TimeValue {
             if self.0 >= 0 {
                 (self.0/period.0)*period.0
             } else {
-                ((self.0+1)/period.0-1)*period.0
+                ((self.0+1)/period.0-1).saturating_mul(period.0).max(-INFINITE_TIME_VALUE)
             }
         )
     }
@@ -206,9 +206,9 @@ impl TimeValue {
     {
         Self(
             if self.0 > 0 {
-                ((self.0-1)/period.0+1)*period.0
+                ((self.0-1)/period.0+1).saturating_mul(period.0)
             } else {
-                ((self.0-1)/period.0)*period.0
+                (self.0/period.0)*period.0
             }
         )
     }
@@ -369,6 +369,8 @@ impl Sum for TimeValue {
         assert_eq!( TimeValue::from_ticks(0).ceil(TimeValue::from_ticks(13)).as_ticks(), 0);
         assert_eq!( TimeValue::from_ticks(-13).ceil(TimeValue::from_ticks(5)).as_ticks(), -10);
         assert_eq!( TimeValue::from_ticks(-15).ceil(TimeValue::from_ticks(5)).as_ticks(), -15);
+        assert_eq!( TimeValue::from_ticks(-9).ceil(TimeValue::from_ticks(10)).as_ticks(), 0);
+        assert_eq!( TimeValue::from_ticks(-10).ceil(TimeValue::from_ticks(10)).as_ticks(), -10);
     }
 
 

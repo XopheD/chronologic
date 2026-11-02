@@ -40,7 +40,7 @@ mod tests {
         let b1 = TimeValue::from_ticks(179);
         let b2 = TimeValue::from_ticks(279);
 
-        let mut a = TimeSet::convex(a1,a2);
+        let a = TimeSet::convex(a1,a2);
         let b = TimeSet::convex(b1,b2);
 
         assert_eq!(a|b, TimeInterval::new(a1,b2));

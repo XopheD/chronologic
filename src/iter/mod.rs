@@ -140,7 +140,6 @@ impl<I,F> TimeConvexIterator for std::iter::Inspect<I,F>
 
 pub(crate) mod intoiter {
     use std::iter::FusedIterator;
-    use crate::*;
     use crate::iter::*;
 
     // just a wrapper to add the trait TimeConvexIterator to some Iterator but not all

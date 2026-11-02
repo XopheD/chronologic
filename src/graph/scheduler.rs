@@ -1,7 +1,6 @@
 use std::fmt;
 use std::iter;
 use std::ops::BitAndAssign;
-use crate::*;
 use crate::graph::*;
 use crate::graph::propagation::{TimeInconsistencyError, TimePropagation, TimePropagationResult};
 use crate::iter::{TimeIntersection, TimeTranslation};
@@ -28,7 +27,7 @@ impl TimeScheduler<'_> {
     {
         TimeScheduler {
             constraints: graph,
-            schedule: iter::repeat(TimeSlots::all()).take(graph.size() as usize).collect()
+            schedule: iter::repeat_n(TimeSlots::all(),graph.size() as usize).collect()
         }
     }
 

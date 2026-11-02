@@ -16,6 +16,7 @@ pub struct TimeSeqBackward {
     step: TimeValue
 }
 
+#[allow(dead_code)]
 pub trait TimeSequence: Timestamped
 {
     fn new<T:Timestamped>(t: T, delta: TimeValue) -> Self;
