@@ -1,7 +1,6 @@
 use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
-use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
 use std::time::SystemTime;
-
+use time::UtcDateTime;
 use crate::*;
 
 /// # A UTC timestamp (date + time)
@@ -31,7 +30,7 @@ impl Timestamp {
     pub fn elapsed(&self) -> TimeValue { Self::now() - *self }
 
     #[inline]
-    pub fn to_datetime(&self) -> DateTime<Utc> { Utc.from_utc_datetime(&(*self).into()) }
+    pub fn to_datetime(&self) -> UtcDateTime { Utc.from_utc_datetime(&(*self).into()) }
 
     #[inline]
     pub fn floor(self, period:TimeValue) -> Self
