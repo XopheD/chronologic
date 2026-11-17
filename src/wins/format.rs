@@ -1,6 +1,5 @@
 use std::fmt;
 use crate::*;
-use chrono::format::*;
 
 pub trait TimeSetFormat {
     fn format_timeset(&self, timefmt: &str) -> String;
