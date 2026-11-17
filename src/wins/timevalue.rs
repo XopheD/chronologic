@@ -1,6 +1,6 @@
 use std::iter::Sum;
 use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
-use std::time;
+use time::SignedDuration;
 use crate::*;
 
 
@@ -247,40 +247,35 @@ impl TimePoint for TimeValue
     }
 }
 
-impl From<TimeValue> for chrono::Duration
+impl From<TimeValue> for SignedDuration
 {
     #[inline]
     fn from(value: TimeValue) -> Self {
-        chrono::Duration::nanoseconds(
-            ((value.0 as i128 * 1_000_000_000) >> SUBSEC_BITLEN) as i64
-        )
+        SignedDuration::new(value.as_secs(), value.subsec_nanos())
     }
 }
 
-impl From<chrono::Duration> for TimeValue
+impl From<SignedDuration> for TimeValue
 {
     #[inline]
-    fn from(t: chrono::Duration) -> Self
+    fn from(t: SignedDuration) -> Self
     {
-        match t.num_nanoseconds() {
-            None => TimeValue::INFINITE,
-            Some(nanos) => TimeValue::from_nanos(nanos)
-        }
+        TimeValue::from_secs(t.whole_seconds()) + TimeValue::from_nanos(t.subsec_nanoseconds() as i64)
     }
 }
 
-impl From<TimeValue> for time::Duration
+impl From<TimeValue> for std::time::Duration
 {
     #[inline]
     fn from(value: TimeValue) -> Self {
         assert!( value.0 >= 0 , "can’t convert negative time value to duration");
-        time::Duration::new(value.as_secs() as u64, value.subsec_nanos() as u32)
+        std::time::Duration::new(value.as_secs() as u64, value.subsec_nanos() as u32)
     }
 }
 
-impl From<time::Duration> for TimeValue
+impl From<std::time::Duration> for TimeValue
 {
-    fn from(t: time::Duration) -> Self
+    fn from(t: std::time::Duration) -> Self
     {
         let sec = t.as_secs();
         if sec > i32::MAX as u64 {
