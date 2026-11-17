@@ -1,7 +1,6 @@
 use crate::*;
 use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 use std::time::SystemTime;
-use time::{SignedDuration, UtcDateTime};
 
 /// # A UTC timestamp (date + time)
 #[derive(Copy, Clone, Default, Hash, Eq, PartialEq, Ord, PartialOrd)]
@@ -34,12 +33,6 @@ impl Timestamp {
     #[inline]
     pub fn elapsed(&self) -> TimeValue {
         Self::now() - *self
-    }
-
-    #[inline]
-    pub fn to_datetime(&self) -> UtcDateTime {
-        UtcDateTime::from_unix_timestamp(self.elapsed().as_secs()).unwrap()
-            + SignedDuration::nanoseconds(self.elapsed().subsec_nanos() as i64)
     }
 
     #[inline]
@@ -136,22 +129,6 @@ impl<T: Timestamped> Timestamped for &T {
     #[inline]
     fn timestamp(&self) -> Timestamp {
         T::timestamp(self)
-    }
-}
-
-impl From<Timestamp> for UtcDateTime {
-    #[inline]
-    fn from(value: Timestamp) -> Self {
-        value.to_datetime()
-    }
-}
-
-impl From<UtcDateTime> for Timestamp {
-    #[inline]
-    fn from(t: UtcDateTime) -> Self {
-        Timestamp::from_origin(
-            TimeValue::from_secs(t.unix_timestamp()) + TimeValue::from_nanos(t.nanosecond() as i64),
-        )
     }
 }
 

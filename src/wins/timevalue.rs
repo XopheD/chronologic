@@ -1,6 +1,5 @@
 use std::iter::Sum;
 use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
-use time::SignedDuration;
 use crate::*;
 
 
@@ -172,9 +171,6 @@ impl TimeValue {
     }
 
     #[inline]
-    pub fn to_duration(&self) -> chrono::Duration { (*self).into() }
-
-    #[inline]
     pub fn is_zero(&self) -> bool { self.0 == 0 }
 
     #[inline]
@@ -247,22 +243,6 @@ impl TimePoint for TimeValue
     }
 }
 
-impl From<TimeValue> for SignedDuration
-{
-    #[inline]
-    fn from(value: TimeValue) -> Self {
-        SignedDuration::new(value.as_secs(), value.subsec_nanos())
-    }
-}
-
-impl From<SignedDuration> for TimeValue
-{
-    #[inline]
-    fn from(t: SignedDuration) -> Self
-    {
-        TimeValue::from_secs(t.whole_seconds()) + TimeValue::from_nanos(t.subsec_nanoseconds() as i64)
-    }
-}
 
 impl From<TimeValue> for std::time::Duration
 {
