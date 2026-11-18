@@ -142,8 +142,8 @@ impl TimeValue {
 
     /// Fractional part of a time value (milliseconds)
     ///
-    /// __Important note__: the fractional part of a second is represented in ticks which is
-    /// an internal representation close to (but not equal) the nanosecond.
+    /// __Important note__: the fractional part of a second is internally represented in ticks
+    /// which is a representation close to (but not equal) the nanosecond.
     #[inline]
     pub fn subsec_millis(&self) -> i32
     {
@@ -152,8 +152,8 @@ impl TimeValue {
 
     /// Fractional part of a time value (microseconds)
     ///
-    /// __Important note__: the fractional part of a second is represented in ticks which is
-    /// an internal representation close to (but not equal) the nanosecond.
+    /// __Important note__: the fractional part of a second is internally represented in ticks
+    /// which is a representation close to (but not equal) the nanosecond.
     #[inline]
     pub fn subsec_micros(&self) -> i32
     {
@@ -162,12 +162,22 @@ impl TimeValue {
 
     /// Fractional part of the time value (nanoseconds)
     ///
-    /// __Important note__: the fractional part of a second is represented in ticks which is
-    /// an internal representation close to (but not equal) the nanosecond.
+    /// __Important note__: the fractional part of a second is internally represented in ticks
+    /// which is a representation close to (but not equal) the nanosecond.
     #[inline]
     pub fn subsec_nanos(&self) -> i32
     {
         ((((self.0 & SUBSEC_BITMASK)  as u64 * 10_000_000_000 + 5_000_000_000) >> SUBSEC_BITLEN)/10) as i32
+    }
+
+    /// Fractional part of the time value (ticks)
+    ///
+    /// __Important note__: the fractional part of a second is internally represented in ticks
+    /// which is a representation close to (but not equal) the nanosecond.
+    #[inline]
+    pub fn subsec_ticks(&self) -> i32
+    {
+        (self.0 & SUBSEC_BITMASK)  as i32
     }
 
     #[inline]

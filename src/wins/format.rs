@@ -21,7 +21,8 @@ impl TimePointFormat for TimeValue {
 
 impl TimePointFormat for Timestamp {
     fn format_timepoint(self, timefmt: &str) -> String {
-        jiff::Timestamp::new(self.elapsed().as_secs(), self.elapsed().subsec_nanos())
+
+        jiff::Timestamp::new(self.since_origin().as_secs(), self.since_origin().subsec_nanos())
             .unwrap()
             .strftime(timefmt)
             .to_string()
