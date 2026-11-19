@@ -21,7 +21,6 @@ impl TimePointFormat for TimeValue {
 
 impl TimePointFormat for Timestamp {
     fn format_timepoint(self, timefmt: &str) -> String {
-
         jiff::Timestamp::new(self.since_origin().as_secs(), self.since_origin().subsec_nanos())
             .unwrap()
             .strftime(timefmt)
@@ -179,7 +178,14 @@ impl fmt::Display for Timestamp {
             if self.is_future_infinite() {
                 write!(formatter, "+oo")
             } else {
-                write!(formatter, "{}", self.format_timepoint("%F %T%.9f"))
+                let nanos = self.0.subsec_nanos();
+                if nanos % 1000000 == 0 {
+                    write!(formatter, "{}", self.format_timepoint("%F %T%.3f UTC"))
+                } else if nanos % 1000 == 0 {
+                    write!(formatter, "{}", self.format_timepoint("%F %T%.6f UTC"))
+                } else {
+                    write!(formatter, "{}", self.format_timepoint("%F %T%.9f UTC"))
+                }
             }
         } else {
             if self.is_past_infinite() {
