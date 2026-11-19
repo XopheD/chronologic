@@ -9,6 +9,8 @@
 It is designed to manage efficiently thousands of instants
 in order to be used, for instance, for planning or sheduling problems.
 
+_Note_: since `0.8`, this crate does not rely on crate `chrono` which is no longer maintained.
+
 ## Features
 * `serde` provides the Serialize/Deserialize traits for all structures of this crate
 

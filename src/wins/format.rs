@@ -1,6 +1,5 @@
-use std::fmt;
 use crate::*;
-use chrono::format::*;
+use std::fmt;
 
 pub trait TimeSetFormat {
     fn format_timeset(&self, timefmt: &str) -> String;
@@ -11,7 +10,6 @@ pub trait TimePointFormat {
 }
 
 impl TimePointFormat for TimeValue {
-
     fn format_timepoint(self, _timefmt: &str) -> String {
         if self.is_positive() {
             format_duration(self.as_ticks())
@@ -22,28 +20,38 @@ impl TimePointFormat for TimeValue {
 }
 
 impl TimePointFormat for Timestamp {
-
     fn format_timepoint(self, timefmt: &str) -> String {
-        format_timestamp(self, timefmt).to_string()
+
+        jiff::Timestamp::new(self.since_origin().as_secs(), self.since_origin().subsec_nanos())
+            .unwrap()
+            .strftime(timefmt)
+            .to_string()
     }
 }
 
-fn format_duration(t: i64) -> String
-{
-    assert! ( t >= 0 );
+fn format_duration(t: i64) -> String {
+    assert!(t >= 0);
     let mut nanos = TimeValue::from_ticks(t).subsec_nanos();
     let _remaining_ticks = t - TimeValue::from_nanos(nanos as i64).as_ticks();
 
-    fn concat_unit<F:Fn(i64)->TimeValue>(ticks: (i64,String), convert:F, unit: &str) -> (i64, String)
-    {
+    fn concat_unit<F: Fn(i64) -> TimeValue>(
+        ticks: (i64, String),
+        convert: F,
+        unit: &str,
+    ) -> (i64, String) {
         let x = ticks.0 / (convert)(1).as_ticks();
         if x == 0 {
             ticks
-         } else {
-            (ticks.0 - (convert)(x).as_ticks(), format!("{}{x}{unit} ", ticks.1))
+        } else {
+            (
+                ticks.0 - (convert)(x).as_ticks(),
+                format!("{}{x}{unit} ", ticks.1),
+            )
         }
     }
-    if t == 0 { return "0".to_string(); }
+    if t == 0 {
+        return "0".to_string();
+    }
     let ticks = (t, String::new());
     let ticks = concat_unit(ticks, TimeValue::from_years, "y");
     let ticks = concat_unit(ticks, TimeValue::from_months, "mo");
@@ -54,11 +62,11 @@ fn format_duration(t: i64) -> String
 
     let mut str = ticks.1;
     if nanos > 1_000_000 {
-        str = format!("{}{}ms ", str, nanos/1_000_000);
+        str = format!("{}{}ms ", str, nanos / 1_000_000);
         nanos %= 1_000_000;
     }
     if nanos > 1_000 {
-        str = format!("{}{}us ", str, nanos/1_000);
+        str = format!("{}{}us ", str, nanos / 1_000);
         nanos %= 1_000;
     }
     if nanos > 0 {
@@ -78,22 +86,21 @@ fn format_duration(t: i64) -> String
     }
 }
 
-fn format_timestamp(t: Timestamp, timefmt: &str) -> DelayedFormat<StrftimeItems<'_>> {
-    t.to_datetime().format(timefmt)
-}
-
-fn format_timeslot<TW:TimeConvex>(tw: &TW, timefmt: &str) -> String
-    where TW::TimePoint: TimePointFormat
+fn format_timeslot<TW: TimeConvex>(tw: &TW, timefmt: &str) -> String
+where
+    TW::TimePoint: TimePointFormat,
 {
     if tw.is_empty() {
         "{{}}".to_string()
-
     } else if tw.is_singleton() {
         format!("{{{}}}", tw.lower_bound().format_timepoint(timefmt))
-
     } else if tw.is_low_bounded() {
         if tw.is_up_bounded() {
-            format!("[{},{}]",tw.lower_bound().format_timepoint(timefmt), tw.upper_bound().format_timepoint(timefmt))
+            format!(
+                "[{},{}]",
+                tw.lower_bound().format_timepoint(timefmt),
+                tw.upper_bound().format_timepoint(timefmt)
+            )
         } else {
             format!("[{},+oo[", tw.lower_bound().format_timepoint(timefmt))
         }
@@ -104,28 +111,25 @@ fn format_timeslot<TW:TimeConvex>(tw: &TW, timefmt: &str) -> String
     }
 }
 
-impl<TW:TimeWindow> TimeSetFormat for TW
-    where TW::TimePoint: TimePointFormat
+impl<TW: TimeWindow> TimeSetFormat for TW
+where
+    TW::TimePoint: TimePointFormat,
 {
-    fn format_timeset(&self, timefmt: &str) -> String
-    {
+    fn format_timeset(&self, timefmt: &str) -> String {
         let mut iter = self.iter();
         if let Some(first) = iter.next() {
-            iter.fold(format_timeslot(&first, timefmt),
-                      |s,i| s + "U" + &format_timeslot(&i,timefmt))
+            iter.fold(format_timeslot(&first, timefmt), |s, i| {
+                s + "U" + &format_timeslot(&i, timefmt)
+            })
         } else {
-           "{{}}".to_string() /* empty set */
+            "{{}}".to_string() /* empty set */
         }
     }
 }
 
-
-
-impl Debug for TimeValue
-{
+impl Debug for TimeValue {
     #[allow(clippy::collapsible_else_if)]
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
-    {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         if self.0 >= 0 {
             if self.is_future_infinite() {
                 write!(formatter, "+oo")
@@ -142,12 +146,9 @@ impl Debug for TimeValue
     }
 }
 
-
-impl fmt::Display for TimeValue
-{
+impl fmt::Display for TimeValue {
     #[allow(clippy::collapsible_else_if)]
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
-    {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         if self.0 >= 0 {
             if self.is_future_infinite() {
                 write!(formatter, "+oo")
@@ -164,24 +165,21 @@ impl fmt::Display for TimeValue
     }
 }
 
-impl fmt::Debug for Timestamp
-{
+impl fmt::Debug for Timestamp {
     #[inline]
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "t={:?}", self.0)
     }
 }
 
-impl fmt::Display for Timestamp
-{
+impl fmt::Display for Timestamp {
     #[allow(clippy::collapsible_else_if)]
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
-    {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         if self.0.is_positive() {
             if self.is_future_infinite() {
                 write!(formatter, "+oo")
             } else {
-                write!(formatter, "{}", self.to_datetime())
+                write!(formatter, "{}", self.format_timepoint("%F %T%.9f"))
             }
         } else {
             if self.is_past_infinite() {
@@ -193,12 +191,9 @@ impl fmt::Display for Timestamp
     }
 }
 
-
-impl<T:TimePoint+fmt::Debug> fmt::Debug for TimeInterval<T>
-{
+impl<T: TimePoint + fmt::Debug> fmt::Debug for TimeInterval<T> {
     #[allow(clippy::collapsible_else_if)]
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
-    {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         if self.is_low_bounded() {
             if self.is_up_bounded() {
                 if self.lower == self.upper {
@@ -219,17 +214,12 @@ impl<T:TimePoint+fmt::Debug> fmt::Debug for TimeInterval<T>
     }
 }
 
-
-impl<T:TimePoint+fmt::Display> fmt::Display for TimeInterval<T>
-{
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
-    {
+impl<T: TimePoint + fmt::Display> fmt::Display for TimeInterval<T> {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         if self.is_empty() {
             write!(formatter, "{{}}")
-
         } else if self.is_singleton() {
             write!(formatter, "{{{}}}", self.lower)
-
         } else if self.is_low_bounded() {
             if self.is_up_bounded() {
                 write!(formatter, "[{},{}]", self.lower, self.upper)
@@ -244,12 +234,8 @@ impl<T:TimePoint+fmt::Display> fmt::Display for TimeInterval<T>
     }
 }
 
-
-
-impl<T:TimePoint+fmt::Debug> fmt::Debug for TimeSet<T>
-{
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
-    {
+impl<T: TimePoint + fmt::Debug> fmt::Debug for TimeSet<T> {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         let mut iter = self.0.iter();
         if let Some(first) = iter.next() {
             write!(formatter, "{:?}", first)?;
@@ -260,10 +246,8 @@ impl<T:TimePoint+fmt::Debug> fmt::Debug for TimeSet<T>
     }
 }
 
-impl<T:TimePoint+fmt::Display> fmt::Display for TimeSet<T>
-{
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result
-    {
+impl<T: TimePoint + fmt::Display> fmt::Display for TimeSet<T> {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         let mut iter = self.0.iter();
         if let Some(first) = iter.next() {
             write!(formatter, "{}", first)?;

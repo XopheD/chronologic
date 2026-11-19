@@ -1,6 +1,6 @@
 [package]
 name = "chronologic"
-version = "0.7.13"
+version = "0.8.0"
 edition = "2021"
 authors = ["Xophe <christophe.dousson@me.com>"]
 license = "MIT"
@@ -14,5 +14,5 @@ categories = ["data-structures","algorithms"]
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"], optional = true }
-chrono = { version = "0.4.40", default-features = false, features = [ "alloc" ] }
+jiff = { version = "1.0.0" }
 embed-doc-image = "0.1.4"
