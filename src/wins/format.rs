@@ -180,7 +180,7 @@ impl fmt::Display for Timestamp {
             } else {
                 let nanos = self.0.subsec_nanos();
                 if nanos == 0 {
-                    write!(formatter, "{}", self.format_timepoint("%F %T% UTC"))
+                    write!(formatter, "{}", self.format_timepoint("%F %T UTC"))
                 } else if nanos % 1000000 == 0 {
                     write!(formatter, "{}", self.format_timepoint("%F %T%.3f UTC"))
                 } else if nanos % 1000 == 0 {
