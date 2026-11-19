@@ -2,6 +2,9 @@ use crate::*;
 use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 use std::time::SystemTime;
 
+#[cfg(feature = "chrono")]
+use chrono::{DateTime, Utc};
+
 /// # A UTC timestamp (date + time)
 #[derive(Copy, Clone, Default, Hash, Eq, PartialEq, Ord, PartialOrd)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -33,6 +36,16 @@ impl Timestamp {
     #[inline]
     pub fn elapsed(&self) -> TimeValue {
         Self::now() - *self
+    }
+
+    #[cfg(feature = "chrono")]
+    #[inline]
+    pub fn to_datetime(&self) -> DateTime<Utc> {
+        DateTime::from_timestamp(
+            self.since_origin().as_secs(),
+            self.since_origin().subsec_nanos() as u32,
+        )
+        .unwrap()
     }
 
     #[inline]
